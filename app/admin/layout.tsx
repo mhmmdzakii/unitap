@@ -19,7 +19,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="h-screen flex flex-col bg-[#FDFDFD] font-sans text-gray-900 overflow-hidden">
+    <div className="min-h-screen flex flex-col bg-[#FDFDFD] font-sans text-gray-900 overflow-x-hidden">
       
       {/* HEADER FIXED */}
       <header className="h-[60px] bg-white border-b border-gray-100 flex items-center justify-between px-4 md:px-6 z-50 shrink-0 relative">
