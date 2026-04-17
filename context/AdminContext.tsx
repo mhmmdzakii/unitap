@@ -28,8 +28,6 @@ const AdminContext = createContext<any>(null);
 export const AdminProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
-  
-  // Pemicu Animasi
   const [celebration, setCelebration] = useState<'pro' | 'premium' | null>(null);
 
   const [profile, setProfile] = useState({ 
@@ -77,7 +75,7 @@ export const AdminProvider = ({ children }: { children: React.ReactNode }) => {
     fetchUserData();
   }, [router]);
 
-  // 2. RADAR CCTV REAL-TIME
+  // 2. RADAR CCTV REAL-TIME (Profiles Only)
   useEffect(() => {
     if (!userId) return;
     const channel = supabase
@@ -87,7 +85,7 @@ export const AdminProvider = ({ children }: { children: React.ReactNode }) => {
            const newPlan = payload.new.plan_type;
            setProfile(prev => {
               if (prev.plan_type !== newPlan && (newPlan === 'pro' || newPlan === 'premium')) {
-                  setCelebration(newPlan); // Memicu Overlay
+                  setCelebration(newPlan); 
               }
               return { ...prev, plan_type: newPlan, is_verified: payload.new.is_verified };
            });
@@ -96,12 +94,39 @@ export const AdminProvider = ({ children }: { children: React.ReactNode }) => {
     return () => { supabase.removeChannel(channel); };
   }, [userId]);
 
-  // UTILITIES
-  const updateThemeInDB = async (themeId: string, customBgUrl: string = '') => { /* ... */ };
-  const updateDesignConfigDB = async (field: string, value: string) => { /* ... */ };
-  const addNewLink = async (title: string, url: string, type: string) => { /* ... */ };
-  const updateLinkDB = async (id: number, field: string, value: any) => { /* ... */ };
-  const deleteLinkDB = async (id: number) => { /* ... */ };
+  // UTILITIES - 🔥 FULL LOGIC FIXED
+  const updateThemeInDB = async (themeId: string, customBgUrl: string = '') => {
+    const selectedTheme = THEMES_DATA[themeId];
+    const newFont = selectedTheme?.font || 'sans';
+    setActiveTheme(themeId);
+    if (customBgUrl) setCustomBg(customBgUrl);
+    setDesignConfig(prev => ({ ...prev, fontFamily: newFont }));
+    if (userId) await supabase.from('profiles').update({ active_theme: themeId, custom_bg_url: customBgUrl || customBg, font_family: newFont }).eq('id', userId);
+  };
+
+  const updateDesignConfigDB = async (field: string, value: string) => {
+    setDesignConfig(prev => ({ ...prev, [field]: value }));
+    const dbField = field.replace(/([A-Z])/g, "_$1").toLowerCase();
+    if (userId) await supabase.from('profiles').update({ [dbField]: value }).eq('id', userId);
+  };
+
+  const addNewLink = async (title: string, url: string, type: string) => {
+    if (!userId) return;
+    const { data, error } = await supabase.from('links').insert([{ user_id: userId, title, url, type, is_active: true }]).select().single();
+    if (error) return console.error(error);
+    if (data) setLinks(prev => [{ ...data, isActive: data.is_active }, ...prev]);
+  };
+
+  const updateLinkDB = async (id: number, field: string, value: any) => {
+    setLinks(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l));
+    const dbField = field === 'isActive' ? 'is_active' : field;
+    await supabase.from('links').update({ [dbField]: value }).eq('id', id);
+  };
+
+  const deleteLinkDB = async (id: number) => {
+    setLinks(prev => prev.filter(l => l.id !== id));
+    await supabase.from('links').delete().eq('id', id);
+  };
 
   const setupTasks = [
     { id: 'link', label: 'Add your first link', completed: links.length > 0 },
@@ -117,14 +142,11 @@ export const AdminProvider = ({ children }: { children: React.ReactNode }) => {
       activeTheme, setActiveTheme, customBg, THEMES_DATA, currentThemeData, updateThemeInDB,
       designConfig, updateDesignConfigDB, setupTasks, setupProgress
     }}>
-      
-      {/* Panggil Layar Pesta di Sini Kalau Ada Triggernya */}
       <AnimatePresence>
         {celebration && (
             <CelebrationOverlay celebration={celebration} onClose={() => setCelebration(null)} />
         )}
       </AnimatePresence>
-
       {children}
     </AdminContext.Provider>
   );
