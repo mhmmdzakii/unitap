@@ -57,18 +57,21 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
         `}} />
 
         {/* BACKGROUND IMAGE (FIXED POS) */}
-        {profile.custom_bg_url ? (
-           <>
-             <img src={profile.custom_bg_url} alt="Bg" className="fixed inset-0 w-full h-full object-cover z-0" />
-             <div className="fixed inset-0 bg-black/30 z-[5]"></div>
-           </>
-        ) : theme.bgImage ? (
-           <>
-             <img src={theme.bgImage} alt="Bg" className="fixed inset-0 w-full h-full object-cover z-0" />
-             <div className="fixed inset-0 bg-black/30 z-[5]"></div>
-           </>
-        ) : null}
-
+       {/* GANTI BLOK BACKGROUND DI page.tsx PAKE INI 🔥 */}
+{(profile.custom_bg_url || theme.bgImage) && (
+  <>
+    <img 
+      src={profile.custom_bg_url || theme.bgImage} 
+      alt="Bg" 
+      className="fixed inset-0 w-full h-full object-cover z-0" 
+    />
+    
+    {/* 🔥 SISTEM BARU: Hanya redup kalau di constants ditulis 'redup: true' */}
+    {theme.redup === true && (
+      <div className="fixed inset-0 bg-black/40 z-[5]"></div>
+    )}
+  </>
+)}
         {/* 🔥 CONTAINER UTAMA - DIKUNCI MAKS 480px BIAR DI PC GAK MELAR 🔥 */}
         <div className="w-full max-w-[480px] flex flex-col items-center relative z-10 mx-auto">
           

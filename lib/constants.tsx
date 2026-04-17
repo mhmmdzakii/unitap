@@ -17,6 +17,15 @@ export const THEMES_DATA: Record<string, any> = {
   retro_cafe: { id: 'retro_cafe', name: 'Retro Cafe', bgTheme: 'bg-[#4A3B32]', textTheme: 'text-white drop-shadow-lg', btnTheme: 'bg-[#FDF6E3]/80 text-[#4A3B32] backdrop-blur-md border border-white/50 shadow-xl hover:bg-[#FDF6E3]' },
   apa: { id: 'apa', name: 'Orange Ahay', bgTheme: 'bg-[#3E2F26]', bgImage: '/apa.png', textTheme: 'text-[#F5E6CA]', btnTheme: 'bg-[#E6D3A3] text-[#3E2F26] border-2 border-[#3E2F26] shadow-[4px_4px_0px_#3E2F26] rounded-xl hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_#3E2F26]' },
   uni: { id: 'uni', name: 'uni 90s', bgTheme: 'bg-[#efe6d8]',  bgImage: '/uni.gif', textTheme: 'text-pink-500 drop-shadow-lg', btnTheme: 'bg-pink-500/80 hover:bg-pink-600 text-white border border-pink-300' },
+Cii: { 
+  id: 'Cii', 
+  name: 'Vintage Editorial', 
+  bgTheme: 'bg-[#e9e1d4]', 
+  bgImage: '/abu.gif', 
+  // Nggak usah tulis 'redup' apa-apa, otomatis gambarnya ASLI & CERAH!
+  textTheme: 'text-[#c2410c] drop-shadow-sm', 
+  btnTheme: 'bg-[#c2410c]/90 hover:bg-[#9a3412] text-white border border-[#c2410c]' 
+},
   vintage_diary: { 
     id: 'vintage_diary', 
     name: 'Vintage Diary', 
