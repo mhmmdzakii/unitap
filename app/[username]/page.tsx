@@ -3,23 +3,23 @@ import { supabase } from '@/lib/supabase';
 import { notFound } from 'next/navigation';
 import { THEMES_DATA } from '@/context/AdminContext';
 
-// Biar datanya selalu fresh tiap dibuka (Gak kena cache lama)
+// Biar datanya selalu fresh tiap kali orang buka link lo
 export const revalidate = 0;
 
-export default async function PublicProfile({ params }: { params: { username: string } }) {
-  // 1. Ambil username dari URL
-  const { username } = params;
+export default async function PublicProfile({ params }: { params: Promise<{ username: string }> }) {
+  // 1. 🔥 FIX UTAMA: Harus di-await karena params sekarang sifatnya Promise
+  const resolvedParams = await params;
+  const username = resolvedParams.username;
 
-  // 2. QUERY KE SUPABASE (Cari berdasarkan kolom 'username'!)
+  // 2. QUERY KE SUPABASE (Cari berdasarkan kolom 'username')
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('*')
-    .eq('username', username) // 🔥 INI KUNCINYA: Harus cari pake username
+    .eq('username', username)
     .single();
 
   // Kalau data gak ada atau error, langsung lempar ke halaman 404
   if (profileError || !profile) {
-    console.log("User tidak ditemukan di DB:", username);
     return notFound();
   }
 
@@ -31,11 +31,11 @@ export default async function PublicProfile({ params }: { params: { username: st
     .eq('is_active', true)
     .order('id', { ascending: false });
 
-  // 4. SETUP TEMA (Biar tampilannya persis kayak simulasi HP)
+  // 4. SETUP TEMA (Biar tampilannya persis kayak simulasi HP di Dashboard)
   const activeTheme = profile.active_theme || 'light';
   const theme = THEMES_DATA[activeTheme] || THEMES_DATA.light;
   
-  // Logika Font & Background
+  // Logika Font & Background Custom
   const fontFamily = profile.font_family || theme.font || 'sans';
   const bgStyle = activeTheme === 'custom' && profile.custom_bg_url
     ? { backgroundImage: `url(${profile.custom_bg_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
@@ -48,8 +48,8 @@ export default async function PublicProfile({ params }: { params: { username: st
     >
       <div className="max-w-[500px] w-full flex flex-col items-center">
         
-        {/* AVATAR */}
-        <div className="w-24 h-24 rounded-full bg-gray-200 mb-4 overflow-hidden border-2 border-white shadow-lg">
+        {/* AVATAR (Dicebear buat placeholder keren) */}
+        <div className="w-24 h-24 rounded-full bg-white mb-4 overflow-hidden border-2 border-white shadow-lg">
            <img 
               src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`} 
               alt="avatar" 
@@ -67,7 +67,7 @@ export default async function PublicProfile({ params }: { params: { username: st
           {profile.bio || 'Welcome to my page!'}
         </p>
 
-        {/* LIST TOMBOL LINKS */}
+        {/* LIST TOMBOL LINKS (Sesuai gaya tombol tema lo) */}
         <div className="w-full space-y-4">
           {links && links.length > 0 ? (
             links.map((link) => (
@@ -82,11 +82,11 @@ export default async function PublicProfile({ params }: { params: { username: st
               </a>
             ))
           ) : (
-            <p className="text-center opacity-50 text-sm">Belum ada link yang ditambahkan.</p>
+            <p className="text-center opacity-50 text-sm">No links found.</p>
           )}
         </div>
 
-        {/* FOOTER */}
+        {/* FOOTER GAUL */}
         <div className="mt-20 opacity-40">
            <p className={`text-[11px] font-black tracking-widest ${theme.textTheme}`}>UNITAP 🚀</p>
         </div>
