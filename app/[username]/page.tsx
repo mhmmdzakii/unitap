@@ -11,16 +11,17 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
   const username = resolvedParams.username;
 
   try {
+    // 1. AMBIL DATA PROFILE DARI DB
     const { data: profile, error: profileError } = await supabase.from('profiles').select('*').eq('username', username).single();
     if (profileError || !profile) return notFound();
 
+    // 2. AMBIL DATA LINKS
     const { data: links } = await supabase.from('links').select('*').eq('user_id', profile.id).eq('is_active', true).order('id', { ascending: false });
 
-    // SETTING TEMA
+    // 3. SETTING TEMA & DESIGN
     const activeTheme = profile.active_theme || 'light';
     const theme = THEMES_DATA[activeTheme] || THEMES_DATA.light;
     
-    // CUSTOM CONFIG DARI DATABASE
     const designConfig = {
       fontFamily: profile.font_family || theme.font || 'sans',
       buttonShape: profile.button_shape || 'rounded',
@@ -47,7 +48,7 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
 
     return (
       <div 
-        className={`min-h-screen w-full flex flex-col items-center py-16 px-5 transition-all duration-300 relative ${theme.bgTheme}`} 
+        className={`min-h-screen w-full flex flex-col items-center py-16 px-4 sm:px-0 transition-all duration-300 relative ${theme.bgTheme}`} 
         style={{ ...customBgStyle, ...getFontFamily() }}
       >
         {/* INJEK FONT */}
@@ -55,7 +56,7 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Playfair+Display:ital,wght@0,700;1,700&family=Space+Mono:wght@400;700${customFontName}&display=swap');
         `}} />
 
-        {/* BACKGROUND IMAGE KALO ADA */}
+        {/* BACKGROUND IMAGE (FIXED POS) */}
         {profile.custom_bg_url ? (
            <>
              <img src={profile.custom_bg_url} alt="Bg" className="fixed inset-0 w-full h-full object-cover z-0" />
@@ -68,14 +69,17 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
            </>
         ) : null}
 
-        <div className="max-w-[600px] w-full flex flex-col items-center relative z-10">
+        {/* 🔥 CONTAINER UTAMA - DIKUNCI MAKS 480px BIAR DI PC GAK MELAR 🔥 */}
+        <div className="w-full max-w-[480px] flex flex-col items-center relative z-10 mx-auto">
           
-          {/* FOTO PROFIL */}
-          <div className="w-[96px] h-[96px] shrink-0 bg-white rounded-full mb-4 flex items-center justify-center shadow-lg border-[3px] border-white/60 overflow-hidden">
+          {/* 🔥 AVATAR DINAMIS (INITIAL vs PIC) 🔥 */}
+          <div className="w-[96px] h-[96px] shrink-0 bg-white rounded-full mb-4 flex items-center justify-center shadow-lg border-[3px] border-white/60 overflow-hidden relative">
             {profile.profile_image ? (
-              <img src={profile.profile_image} alt="Profile" className="w-full h-full object-cover" />
+              <img src={profile.profile_image} alt={`@${username}`} className="w-full h-full object-cover" />
             ) : (
-              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`} alt="Avatar" className="w-full h-full object-cover bg-gray-100" />
+              <div className="w-full h-full bg-gray-900 flex items-center justify-center text-white font-bold text-4xl uppercase tracking-widest">
+                {profile.username?.charAt(0) || 'U'}
+              </div>
             )}
           </div>
 
@@ -94,7 +98,7 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
           </div>
           
           {/* BIO */}
-          <p className={`text-[15px] mt-1 mb-6 text-center font-medium opacity-90 drop-shadow-md max-w-md ${theme.textTheme}`} style={customTextStyle}>
+          <p className={`text-[15px] mt-1 mb-6 text-center font-medium opacity-90 drop-shadow-md max-w-sm ${theme.textTheme}`} style={customTextStyle}>
             {profile.bio || 'Welcome to my page!'}
           </p>
 
@@ -110,7 +114,7 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
           </div>
 
           {/* LIST LINKS */}
-          <div className="w-full flex flex-col gap-4 mb-16">
+          <div className="w-full flex flex-col gap-4 mb-16 px-1">
             {links?.map((link) => {
               let cat = link.type || 'standard';
               let img = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80";
@@ -142,7 +146,7 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
               if (isFeatured && cat !== 'standard') {
                 return (
                   <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className={`${baseClasses} rounded-[24px] p-3 flex flex-col gap-3 relative overflow-hidden`} style={btnStyleStr}>
-                    <div className="w-full aspect-[2/1] sm:aspect-[2.5/1] rounded-[16px] overflow-hidden shadow-sm relative bg-black/5 flex items-center justify-center">
+                    <div className="w-full aspect-[2/1] rounded-[16px] overflow-hidden shadow-sm relative bg-black/5 flex items-center justify-center">
                        <img src={img} className="w-full h-full object-cover" alt="Cover" />
                     </div>
                     <div className="px-2 pb-2 text-left relative flex justify-between items-end">
@@ -212,7 +216,7 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
           </div>
 
           {/* WATERMARK BAWAH */}
-          <div className={`mt-auto pt-8 flex items-center justify-center gap-2 opacity-70 font-bold text-[12px] uppercase tracking-widest ${theme.textTheme}`} style={customTextStyle}>
+          <div className={`mt-auto pt-4 pb-8 flex items-center justify-center gap-2 opacity-70 font-bold text-[12px] uppercase tracking-widest ${theme.textTheme}`} style={customTextStyle}>
              <div className="w-4 h-4 bg-current rounded-sm flex items-center justify-center text-[10px] text-white" style={customBgStyle.backgroundColor ? { backgroundColor: customTextStyle.color, color: customBgStyle.backgroundColor } : {}}>U</div>
              <a href="/" className="hover:opacity-100 transition-opacity">Powered by UniTap</a>
           </div>
