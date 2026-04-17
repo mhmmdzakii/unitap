@@ -195,10 +195,11 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
               else if (url.includes('youtube.com') || url.includes('youtu.be')) IconToRender = <BrandIcons.youtube />;
               else if (url.includes('tiktok.com')) IconToRender = <BrandIcons.tiktok />;
               else if (url.includes('instagram.com')) IconToRender = <BrandIcons.instagram />;
+              else if (url.includes('maps.google') || url.includes('goo.gl/maps') || url.includes('google.com/maps') || url.includes('maps.app.goo.gl') || url.includes('google.com/maps')) {IconToRender = <BrandIcons.google_maps />; }
+              else if (url.includes('wa.me') || url.includes('whatsapp.com')) IconToRender = <BrandIcons.whatsapp />;
               else if (cat === 'music') IconToRender = <Music size={22} strokeWidth={1.5} />;
               else if (cat === 'video') IconToRender = <Video size={22} strokeWidth={1.5} />;
               else if (cat === 'store') IconToRender = <ShoppingBag size={22} strokeWidth={1.5} />;
-
               return (
                 <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className={`${baseClasses} ${shapeClass} py-4 px-4 flex justify-between items-center`} style={btnStyleStr}>
                    <div className="w-10 flex justify-center items-center opacity-90 z-10">
