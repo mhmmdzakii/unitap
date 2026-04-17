@@ -19,8 +19,15 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FDFDFD] font-sans text-gray-900 overflow-x-hidden">
+    // 🔥 FIX 1: Ganti min-h-screen jadi h-screen biar layar utama gak bisa scroll
+    <div className="h-screen flex flex-col bg-[#FDFDFD] font-sans text-gray-900 overflow-hidden">
       
+      {/* 🔥 CSS SILUMAN: Anti Scrollbar Bawaan Windows 🔥 */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+      `}} />
+
       {/* HEADER FIXED */}
       <header className="h-[60px] bg-white border-b border-gray-100 flex items-center justify-between px-4 md:px-6 z-50 shrink-0 relative">
          
@@ -64,12 +71,13 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
          </div>
       </header>
 
-      {/* BODY AREA */}
+      {/* BODY AREA (Di bawah Header) */}
       <div className="flex flex-1 overflow-hidden relative">
          
-         {/* 🔥 SIDEBAR RESPONSIVE */}
-         {/* Di Layar Gede: Selalu Muncul. Di Layar HP: Ngumpet dulu */}
-         <div className="hidden md:block shrink-0">
+         {/* ========================================== */}
+         {/* 1. KIRI (SIDEBAR FIXED & BISA SCROLL)        */}
+         {/* ========================================== */}
+         <div className="hidden md:block shrink-0 h-full overflow-y-auto hide-scroll">
            <Sidebar />
          </div>
 
@@ -77,14 +85,12 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
          <AnimatePresence>
             {isSidebarOpen && (
               <>
-                {/* Latar Belakang Gelap */}
                 <motion.div 
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                   onClick={() => setIsSidebarOpen(false)}
                   className="md:hidden fixed inset-0 bg-black/50 z-[90] backdrop-blur-sm"
                 />
                 
-                {/* Sidebar Slide-in */}
                 <motion.div 
                   initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                   className="md:hidden fixed inset-y-0 left-0 z-[100] w-[280px] bg-white shadow-2xl flex flex-col"
@@ -98,23 +104,28 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                        <X size={20} />
                     </button>
                   </div>
-                  {/* Gunakan komponen Sidebar, dengan aksi klik menutup sidebar */}
-                  <div className="flex-1 overflow-y-auto" onClick={() => setIsSidebarOpen(false)}>
-                     <Sidebar isMobileView={true} />
+                  {/* Sidebar di HP */}
+                  <div className="flex-1 overflow-y-auto hide-scroll" onClick={() => setIsSidebarOpen(false)}>
+                     {/* Tambahin isMobileView={true} kalau Sidebar lo butuh props itu */}
+                     <Sidebar />
                   </div>
                 </motion.div>
               </>
             )}
          </AnimatePresence>
 
-         {/* MAIN CONTENT (Hanya ini yang bisa scroll) */}
-         <main className="flex-1 overflow-y-auto bg-[#F9FAFB] scroll-smooth shadow-inner md:border-r border-gray-100 relative custom-scrollbar">
+         {/* ========================================== */}
+         {/* 2. TENGAH (MAIN CONTENT BISA SCROLL)         */}
+         {/* ========================================== */}
+         <main className="flex-1 h-full overflow-y-auto bg-[#F9FAFB] scroll-smooth shadow-inner md:border-r border-gray-100 relative hide-scroll">
            {children}
          </main>
 
-         {/* MOBILE PREVIEW FIXED (Diem di tempat) - Cuma muncul di layar gede! */}
+         {/* ========================================== */}
+         {/* 3. KANAN (MOBILE PREVIEW BISA SCROLL)        */}
+         {/* ========================================== */}
          {showMobilePreview && (
-           <div className="hidden lg:block shrink-0">
+           <div className="hidden lg:block shrink-0 h-full overflow-y-auto hide-scroll w-[380px] xl:w-[420px] bg-[#FDFDFD]">
              <MobilePreview profile={profile} links={links} theme={currentThemeData} designConfig={designConfig} />
            </div>
          )}

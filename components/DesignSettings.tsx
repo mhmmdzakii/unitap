@@ -15,6 +15,7 @@ export default function DesignSettings() {
   
   const [activeDesignTab, setActiveDesignTab] = useState('theme');
   const [showProModal, setShowProModal] = useState(false); 
+  const [isSaving, setIsSaving] = useState(false); // 🔥 STATE BARU BUAT TOMBOL SIMPAN
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isPro = profile?.plan_type === 'pro' || profile?.plan_type === 'premium';
@@ -102,14 +103,52 @@ export default function DesignSettings() {
     }
   };
 
+  // 🔥 FUNGSI BARU BUAT SIMPAN NAMA & BIO KE DATABASE
+  const handleSaveProfile = async () => {
+    if (!profile?.id) return;
+    
+    setIsSaving(true);
+    const toastId = toast.loading('Menyimpan profil...'); 
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+
+      if (!userId) throw new Error("Sesi login hilang!");
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          username: profile.username, 
+          bio: profile.bio 
+        })
+        .eq('id', userId);
+
+      if (error) throw error;
+      
+      toast.success('Profil berhasil disimpan permanen! 🔥', { id: toastId });
+    } catch (error: any) {
+      console.error("Error save profile:", error);
+      toast.error('Gagal simpan: ' + error.message, { id: toastId });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <>
       <div className="w-full flex-1 flex flex-col animate-in fade-in duration-500">
         <input type="file" ref={fileInputRef} onChange={handleCustomBgUpload} accept="image/*" className="hidden" />
 
-      {/* TABS NAVIGATION (Unicorn Style - FIXED & RAPI) */}
-      <div className="w-full bg-white pt-6 pb-4 px-8 sticky top-0 z-20 border-b border-gray-100 mb-6">
-        <div className="flex gap-2.5 overflow-x-auto custom-scrollbar pb-2">
+      {/* TABS NAVIGATION (ANTI KEPOTONG & ANTI SCROLLBAR) */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+      `}} />
+      
+      <div className="w-full bg-white pt-4 pb-4 px-8 sticky top-0 z-20 border-b border-gray-100 mb-6">
+        {/* 🔥 FIX NYA DI SINI: Gue ganti pb-2 jadi py-2 (kasih ruang atas bawah) biar ring ijonya gak nabrak atap! */}
+        <div className="flex gap-2.5 overflow-x-auto hide-scroll py-2 px-1">
           {designTabs.map((item) => (
             <button 
               key={item.id} 
@@ -126,9 +165,9 @@ export default function DesignSettings() {
           ))}
         </div>
       </div>
-
+      
         <div className="flex-1 p-8 pb-32 bg-[#F6F7F5] overflow-y-auto">
-           
+            
            {/* 1. THEMES */}
            {activeDesignTab === 'theme' && (
              <div className="max-w-[1000px] mx-auto animate-in slide-in-from-bottom-4">
@@ -218,6 +257,15 @@ export default function DesignSettings() {
                       <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Bio Singkat</label>
                       <textarea value={profile?.bio || ''} onChange={e => setProfile({...profile, bio: e.target.value})} rows={3} className="w-full px-5 py-4 bg-[#F6F7F5] border-transparent focus:bg-white border focus:border-[#7949F6] rounded-xl outline-none font-medium text-gray-700 transition-all resize-none"></textarea>
                    </div>
+                   
+                   {/* 🔥 INI TOMBOL PENYELAMATNYA 🔥 */}
+                   <button 
+                     onClick={handleSaveProfile} 
+                     disabled={isSaving}
+                     className={`w-full py-4 rounded-xl font-bold text-white transition-all mt-2 ${isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-black hover:bg-gray-800 hover:scale-[1.02] shadow-md'}`}
+                   >
+                     {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
+                   </button>
                 </div>
              </div>
            )}

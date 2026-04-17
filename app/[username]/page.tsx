@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { BadgeCheck, MoreVertical, Music, Video, ShoppingBag, Mail } from 'lucide-react';
 import { THEMES_DATA, ICON_MAP, BrandIcons } from '@/lib/constants'; // 🔥 INI IMPORT DARI GUDANG
 
+export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function PublicProfile({ params }: { params: Promise<{ username: string }> }) {
