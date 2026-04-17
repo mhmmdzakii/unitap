@@ -11,12 +11,21 @@ export const THEMES_DATA: Record<string, any> = {
   dark: { id: 'dark', name: 'Minimal Dark', bgTheme: 'bg-[#111111]', textTheme: 'text-white', btnTheme: 'bg-[#222222] text-white hover:bg-[#333333]' },
   ocean: { id: 'ocean', name: 'Ocean Blue', bgTheme: 'bg-gradient-to-b from-blue-50 to-blue-100', textTheme: 'text-blue-900', btnTheme: 'bg-white text-blue-900 shadow-sm hover:shadow-md' },
   matcha: { id: 'matcha', name: 'Matcha Green', bgTheme: 'bg-[#E8F5E9]', textTheme: 'text-[#1B5E20]', btnTheme: 'bg-white text-[#2E7D32] shadow-sm hover:shadow-md' },
-  apa: { id: 'apa', name: 'Orange Ahay', bgTheme: 'bg-[#3E2F26]', textTheme: 'text-[#F5E6CA]', btnTheme: 'bg-[#E6D3A3] text-[#3E2F26] border-2 border-[#3E2F26] shadow-[4px_4px_0px_#3E2F26] rounded-xl hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_#3E2F26]' },
-  uni: { id: 'uni', name: 'uni 90s', bgTheme: 'bg-[#efe6d8]', textTheme: 'text-pink-500 drop-shadow-lg', btnTheme: 'bg-pink-500/80 hover:bg-pink-600 text-white border border-pink-300' },
   glass: { id: 'glass', name: 'Glassmorphism', bgTheme: 'bg-gradient-to-br from-purple-500 to-pink-500', textTheme: 'text-white drop-shadow-md', btnTheme: 'bg-white/20 border border-white/30 text-white backdrop-blur-md shadow-lg hover:bg-white/30' },
   cyber: { id: 'cyber', name: 'Cyberpunk', bgTheme: 'bg-black', textTheme: 'text-[#00ff9f] drop-shadow-[0_0_8px_rgba(0,255,159,0.8)]', btnTheme: 'bg-transparent border border-[#00ff9f] text-[#00ff9f] shadow-[0_0_10px_rgba(0,255,159,0.3)] hover:bg-[#00ff9f] hover:text-black' },
   luxury: { id: 'luxury', name: 'Luxury Gold', bgTheme: 'bg-[#1a1a1a]', textTheme: 'text-[#D4AF37]', btnTheme: 'bg-gradient-to-r from-[#BF953F] via-[#FCF6BA] to-[#B38728] text-black shadow-lg font-extrabold hover:scale-[1.02]' },
-  retro_cafe: { id: 'retro_cafe', name: 'Retro Cafe', bgTheme: 'bg-[#4A3B32]', textTheme: 'text-white drop-shadow-lg', btnTheme: 'bg-[#FDF6E3]/80 text-[#4A3B32] backdrop-blur-md border border-white/50 shadow-xl hover:bg-[#FDF6E3]' }
+  retro_cafe: { id: 'retro_cafe', name: 'Retro Cafe', bgTheme: 'bg-[#4A3B32]', textTheme: 'text-white drop-shadow-lg', btnTheme: 'bg-[#FDF6E3]/80 text-[#4A3B32] backdrop-blur-md border border-white/50 shadow-xl hover:bg-[#FDF6E3]' },
+  apa: { id: 'apa', name: 'Orange Ahay', bgTheme: 'bg-[#3E2F26]', bgImage: '/apa.png', textTheme: 'text-[#F5E6CA]', btnTheme: 'bg-[#E6D3A3] text-[#3E2F26] border-2 border-[#3E2F26] shadow-[4px_4px_0px_#3E2F26] rounded-xl hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_#3E2F26]' },
+  uni: { id: 'uni', name: 'uni 90s', bgTheme: 'bg-[#efe6d8]',  bgImage: '/uni.gif', textTheme: 'text-pink-500 drop-shadow-lg', btnTheme: 'bg-pink-500/80 hover:bg-pink-600 text-white border border-pink-300' },
+  vintage_diary: { 
+    id: 'vintage_diary', 
+    name: 'Vintage Diary', 
+    bgTheme: 'bg-[#F4F1EA]', 
+    bgImage: '/retro_cafe.png', // 🔥 INI DIA KUNCI MASUKIN FOTONYA!
+    textTheme: 'text-white drop-shadow-md', // Teks gue ganti putih + shadow biar kebaca di atas foto
+    btnTheme: 'bg-[#F4F1EA]/80 backdrop-blur-md border-[1.5px] border-[#3C352D] text-[#3C352D] shadow-[4px_4px_0px_rgba(0,0,0,0.5)] rounded-sm hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[0px_0px_0px_rgba(0,0,0,0.5)] transition-all', 
+    font: 'Courier Prime' 
+  }
 };
 
 export const ICON_MAP: Record<string, any> = {
