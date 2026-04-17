@@ -12,7 +12,7 @@ export default function QrCodePage() {
 
   // Ambil username dan bikin URL asli
   const username = profile?.username?.replace('@', '').toLowerCase() || 'username';
-  const profileUrl = `https://unitap.ee/${username}`;
+  const profileUrl = `https://unitap-iota.vercel.app/${username}`;
   
   // API Pintar untuk generate QR Code Real-Time tanpa install library tambahan
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1024x1024&data=${encodeURIComponent(profileUrl)}&margin=20`;

@@ -39,13 +39,19 @@ export default function Sidebar({ isMobileView = false }: { isMobileView?: boole
   const nextGoal = 100; 
   const progressPercent = Math.min((totalClicks / nextGoal) * 100, 100);
 
-  // Quick Copy Handler
-  const handleCopy = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Biar gak nutup menu hp
-    navigator.clipboard.writeText(`unitap.ee/${profile?.username?.replace('@', '')}`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+ // 🔥 TIMPA FUNGSI LAMA LO PAKE INI 🔥
+const handleCopy = (e: React.MouseEvent) => {
+  e.stopPropagation(); // Biar gak nutup menu hp
+  
+  // Kita ambil username, bersihin @, dan bikin huruf kecil semua biar rapi
+  const username = profile?.username?.replace('@', '').toLowerCase() || 'you';
+  
+  // 🔥 INI DIA: Kita suruh dia nyalin link Vercel asli
+  navigator.clipboard.writeText(`https://unitap-iota.vercel.app/${username}`);
+  
+  setCopied(true);
+  setTimeout(() => setCopied(false), 2000);
+};
 
   const NavLink = ({ item }: { item: any }) => {
     const isActive = pathname === item.path;

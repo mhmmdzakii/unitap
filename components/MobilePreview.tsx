@@ -192,7 +192,7 @@ export default function MobilePreview({ profile, links, theme, designConfig }: a
   const [copied, setCopied] = useState(false);
 
   const handleCopyLink = () => {
-    const url = `unitap.ee/${profile.username.replace('@', '').toLowerCase()}`;
+    const url = `https://unitap-iota.vercel.app/${profile.username.replace('@', '').toLowerCase()}`;
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000); 
