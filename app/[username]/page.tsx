@@ -1,96 +1,52 @@
-// app/[username]/page.tsx
 import { supabase } from '@/lib/supabase';
 import { notFound } from 'next/navigation';
-import { THEMES_DATA } from '@/context/AdminContext';
 
-// Biar datanya selalu fresh tiap kali orang buka link lo
 export const revalidate = 0;
 
 export default async function PublicProfile({ params }: { params: Promise<{ username: string }> }) {
-  // 1. 🔥 FIX UTAMA: Harus di-await karena params sekarang sifatnya Promise
-  const resolvedParams = await params;
-  const username = resolvedParams.username;
+  const { username } = await params;
 
-  // 2. QUERY KE SUPABASE (Cari berdasarkan kolom 'username')
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('username', username)
-    .single();
+  try {
+    // 1. Cek DB Profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('username', username)
+      .single();
 
-  // Kalau data gak ada atau error, langsung lempar ke halaman 404
-  if (profileError || !profile) {
-    return notFound();
-  }
+    if (profileError || !profile) {
+      return notFound();
+    }
 
-  // 3. AMBIL LINKS MILIK USER TERSEBUT
-  const { data: links } = await supabase
-    .from('links')
-    .select('*')
-    .eq('user_id', profile.id)
-    .eq('is_active', true)
-    .order('id', { ascending: false });
+    // 2. Cek DB Links
+    const { data: links } = await supabase
+      .from('links')
+      .select('*')
+      .eq('user_id', profile.id)
+      .eq('is_active', true);
 
-  // 4. SETUP TEMA (Biar tampilannya persis kayak simulasi HP di Dashboard)
-  const activeTheme = profile.active_theme || 'light';
-  const theme = THEMES_DATA[activeTheme] || THEMES_DATA.light;
-  
-  // Logika Font & Background Custom
-  const fontFamily = profile.font_family || theme.font || 'sans';
-  const bgStyle = activeTheme === 'custom' && profile.custom_bg_url
-    ? { backgroundImage: `url(${profile.custom_bg_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-    : {};
-
-  return (
-    <div 
-      className={`min-h-screen w-full flex flex-col items-center p-8 transition-all ${theme.bgTheme}`}
-      style={{ ...bgStyle, fontFamily: fontFamily }}
-    >
-      <div className="max-w-[500px] w-full flex flex-col items-center">
+    // 3. Render Polosan Dulu
+    return (
+      <div className="min-h-screen bg-white text-black p-8 flex flex-col items-center">
+        <h1 className="text-2xl font-bold mb-4">@{profile.username} (BERHASIL JALAN!)</h1>
+        <p className="mb-8">{profile.bio}</p>
         
-        {/* AVATAR (Dicebear buat placeholder keren) */}
-        <div className="w-24 h-24 rounded-full bg-white mb-4 overflow-hidden border-2 border-white shadow-lg">
-           <img 
-              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`} 
-              alt="avatar" 
-              className="w-full h-full object-cover"
-           />
-        </div>
-        
-        {/* USERNAME & BIO */}
-        <h1 className={`text-xl font-black mb-1 ${theme.textTheme}`}>
-          @{profile.username}
-          {profile.is_verified && <span className="ml-1 text-blue-500 text-sm">✅</span>}
-        </h1>
-        
-        <p className={`text-center text-[15px] mb-10 font-medium ${theme.textTheme} opacity-80 leading-relaxed`}>
-          {profile.bio || 'Welcome to my page!'}
-        </p>
-
-        {/* LIST TOMBOL LINKS (Sesuai gaya tombol tema lo) */}
-        <div className="w-full space-y-4">
-          {links && links.length > 0 ? (
-            links.map((link) => (
-              <a
-                key={link.id}
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`block w-full py-4 px-6 rounded-full text-center font-bold text-[16px] shadow-sm transition-all transform hover:scale-[1.03] active:scale-[0.97] ${theme.btnTheme}`}
-              >
-                {link.title}
-              </a>
-            ))
-          ) : (
-            <p className="text-center opacity-50 text-sm">No links found.</p>
-          )}
-        </div>
-
-        {/* FOOTER GAUL */}
-        <div className="mt-20 opacity-40">
-           <p className={`text-[11px] font-black tracking-widest ${theme.textTheme}`}>UNITAP 🚀</p>
+        <div className="w-full max-w-md space-y-4">
+          {links?.map(link => (
+            <a key={link.id} href={link.url} className="block p-4 border border-gray-300 rounded-lg text-center">
+              {link.title}
+            </a>
+          ))}
         </div>
       </div>
-    </div>
-  );
+    );
+
+  } catch (error: any) {
+    // Kalau Vercel gagal konek ke Supabase, errornya muncul di layar, bukan 500
+    return (
+      <div className="p-8 text-red-500 font-bold">
+        CRASH DATABASE: {error.message || "Unknown Error"}
+      </div>
+    );
+  }
 }
