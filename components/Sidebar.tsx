@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAdmin } from '@/context/AdminContext';
 import { Heart, BadgeCheck, Globe, Globe2, LineChart, Link2, Palette, QrCode, Search, ShoppingBag, Settings, Layout, Zap, Crown, BarChart2, Check, Copy, Target } from 'lucide-react';
-export default function Sidebar() {
+
+// Tambahin props isMobileView biar bisa di-tweak dikit style-nya kalau lg di HP
+export default function Sidebar({ isMobileView = false }: { isMobileView?: boolean }) {
   const pathname = usePathname();
   const { profile, links } = useAdmin();
   const userPlan = profile?.plan_type || 'free'; 
@@ -38,7 +40,8 @@ export default function Sidebar() {
   const progressPercent = Math.min((totalClicks / nextGoal) * 100, 100);
 
   // Quick Copy Handler
-  const handleCopy = () => {
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Biar gak nutup menu hp
     navigator.clipboard.writeText(`unitap.ee/${profile?.username?.replace('@', '')}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -66,7 +69,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-[280px] bg-white border-r border-gray-100 p-5 flex flex-col h-full z-40 overflow-y-auto custom-scrollbar shrink-0">
+    <aside className={`w-[280px] bg-white p-5 flex flex-col h-full z-40 overflow-y-auto custom-scrollbar shrink-0 ${!isMobileView ? 'border-r border-gray-100' : ''}`}>
       
       {/* QUICK ACTION CARD */}
       <div className="bg-[#F6F7F5] p-3 rounded-2xl mb-6 border border-gray-100 flex items-center justify-between group">
@@ -103,7 +106,7 @@ export default function Sidebar() {
       <div className="mt-auto pt-4 border-t border-gray-100 relative">
         
         {/* GAMIFICATION: MILESTONE TRACKER */}
-        <div className="p-4 bg-white rounded-3xl border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] mb-3 relative overflow-hidden group">
+        <div className="p-4 bg-white rounded-3xl border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] mb-3 relative overflow-hidden group cursor-default" onClick={e => e.stopPropagation()}>
           <div className="flex justify-between items-center mb-2 relative z-10">
             <div className="flex items-center gap-1.5 text-gray-900 font-bold text-xs"><Target size={14} className="text-[#7949F6]"/> Goal</div>
             <span className="text-[10px] font-black text-gray-400">{totalClicks} / {nextGoal}</span>
@@ -115,29 +118,31 @@ export default function Sidebar() {
         </div>
 
         {/* UPGRADE / BADGE PLAN */}
-        {userPlan === 'pro' ? (
-          <div className="p-4 bg-gradient-to-br from-[#7949F6] to-[#d2e823] rounded-2xl text-black shadow-xl relative overflow-hidden flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-1.5 mb-0.5"><Crown size={14} /><span className="font-black text-[11px] uppercase tracking-widest">Pro</span></div>
-              <p className="text-[9px] font-bold text-black/70">All features unlocked</p>
+        <div onClick={e => e.stopPropagation()}>
+          {userPlan === 'pro' ? (
+            <div className="p-4 bg-gradient-to-br from-[#7949F6] to-[#d2e823] rounded-2xl text-black shadow-xl relative overflow-hidden flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-1.5 mb-0.5"><Crown size={14} /><span className="font-black text-[11px] uppercase tracking-widest">Pro</span></div>
+                <p className="text-[9px] font-bold text-black/70">All features unlocked</p>
+              </div>
+              <Crown size={32} className="opacity-20 transform rotate-12 -mr-2" />
             </div>
-            <Crown size={32} className="opacity-20 transform rotate-12 -mr-2" />
-          </div>
-        ) : userPlan === 'premium' ? (
-          <div className="p-4 bg-gradient-to-br from-purple-500 to-[#7949F6] rounded-2xl text-white shadow-xl relative overflow-hidden flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-1.5 mb-0.5"><BadgeCheck size={14} /><span className="font-black text-[11px] uppercase tracking-widest">Premium</span></div>
-              <p className="text-[9px] font-bold text-white/70">Verified & Estetik</p>
+          ) : userPlan === 'premium' ? (
+            <div className="p-4 bg-gradient-to-br from-purple-500 to-[#7949F6] rounded-2xl text-white shadow-xl relative overflow-hidden flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-1.5 mb-0.5"><BadgeCheck size={14} /><span className="font-black text-[11px] uppercase tracking-widest">Premium</span></div>
+                <p className="text-[9px] font-bold text-white/70">Verified & Estetik</p>
+              </div>
+              <BadgeCheck size={32} className="opacity-20 transform rotate-12 -mr-2" />
             </div>
-            <BadgeCheck size={32} className="opacity-20 transform rotate-12 -mr-2" />
-          </div>
-        ) : (
-          <Link href="/admin/pricing" className="block w-full">
-            <button className="w-full py-3 bg-gradient-to-r from-[#7949F6] to-[#d2e823] text-white rounded-2xl text-[11px] font-black hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-1.5 shadow-md">
-              <Zap size={14} fill="currentColor" /> UNLOCK PRO
-            </button>
-          </Link>
-        )}
+          ) : (
+            <Link href="/admin/pricing" className="block w-full">
+              <button className="w-full py-3 bg-gradient-to-r from-[#7949F6] to-[#d2e823] text-white rounded-2xl text-[11px] font-black hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-1.5 shadow-md">
+                <Zap size={14} fill="currentColor" /> UNLOCK PRO
+              </button>
+            </Link>
+          )}
+        </div>
       </div>
     </aside>
   );
