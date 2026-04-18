@@ -125,15 +125,35 @@ export default function EtalasePage() {
   };
 
   // 4. FUNGSI HAPUS PRODUK
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Yakin mau hapus produk ini?')) return;
-    const toastId = toast.loading('Menghapus...');
-    const { error } = await supabase.from('links').delete().eq('id', id);
-    if (error) {
-      toast.error('Gagal menghapus.', { id: toastId });
-    } else {
+ // 4. FUNGSI HAPUS PRODUK (BASMI ZOMBIE SAMPAI KE AKAR) 🧟‍♂️🔫
+  const handleDelete = async (id: string, imageUrl: string | null) => {
+    if (!window.confirm('Yakin mau hapus produk ini sampai ke akar-akarnya?')) return;
+    const toastId = toast.loading('Membasmi produk & foto zombie...');
+
+    try {
+      // LANGKAH 1: BAKAR FOTONYA DI STORAGE DULU
+      if (imageUrl) {
+        // Ekstrak nama file dari URL panjangnya
+        // (Misal dari https://.../avatars/etalase-123.jpg -> kita ambil "etalase-123.jpg")
+        const urlParts = imageUrl.split('/');
+        const fileName = urlParts[urlParts.length - 1];
+
+        if (fileName) {
+          const { error: storageError } = await supabase.storage.from('avatars').remove([fileName]);
+          if (storageError) console.error("Gagal bakar foto zombie:", storageError);
+        }
+      }
+
+      // LANGKAH 2: HAPUS CATATANNYA DARI DATABASE
+      const { error: dbError } = await supabase.from('links').delete().eq('id', id);
+      if (dbError) throw dbError;
+
+      // LANGKAH 3: HILANGKAN DARI LAYAR
       setProducts(products.filter(p => p.id !== id));
-      toast.success('Produk dihapus!', { id: toastId });
+      toast.success('Produk & Foto Zombie hangus terbakar! 🔥', { id: toastId });
+
+    } catch (error: any) {
+      toast.error('Gagal menghapus: ' + error.message, { id: toastId });
     }
   };
 
@@ -221,7 +241,7 @@ export default function EtalasePage() {
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-6">
                 {products.map(product => (
                   <div key={product.id} className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all group relative flex flex-col">
-                    <button onClick={() => handleDelete(product.id)} className="absolute top-2 right-2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center text-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-20 hover:bg-red-500 hover:text-white"><Trash2 size={14}/></button>
+                   <button onClick={() => handleDelete(product.id, product.image_url)} className="absolute top-2 right-2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center text-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-20 hover:bg-red-500 hover:text-white"><Trash2 size={14}/></button>
                     
                     <div className="w-full aspect-square bg-gray-50 relative overflow-hidden">
                       {product.promo_label && (

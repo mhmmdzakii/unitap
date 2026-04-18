@@ -5,59 +5,38 @@ import { Metadata } from 'next';
 import Script from 'next/script';
 import { BadgeCheck, MoreVertical, Music, Video, ShoppingBag, Mail } from 'lucide-react';
 import { THEMES_DATA, ICON_MAP, BrandIcons } from '@/lib/constants'; 
-import { unstable_noStore as noStore } from 'next/cache'; // 🔥 INI OBAT ANTI VERCEL CACHE
+import { unstable_noStore as noStore } from 'next/cache'; 
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// 🔥 JURUS SEO SAKTI: Biar Link Keliatan Pro di WA/IG 🔥
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const { username } = await params;
-
-  // Ambil data buat preview
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('username, bio, profile_image')
-    .eq('username', username)
-    .single();
-
+  const { data: profile } = await supabase.from('profiles').select('username, bio, profile_image').eq('username', username).single();
   const title = profile ? `@${profile.username} | UniTap` : 'UniTap Profile';
   const description = profile?.bio || 'Check out my UniTap profile!';
-  const image = profile?.profile_image || '/og-image.jpg'; // Gambar default kalau user gak punya foto
+  const image = profile?.profile_image || '/og-image.jpg'; 
 
   return {
     title: title,
     description: description,
-    openGraph: {
-      title: title,
-      description: description,
-      images: [image],
-      type: 'website',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: title,
-      description: description,
-      images: [image],
-    },
+    openGraph: { title: title, description: description, images: [image], type: 'website' },
+    twitter: { card: 'summary_large_image', title: title, description: description, images: [image] },
   };
 }
 
 export default async function PublicProfile({ params }: { params: Promise<{ username: string }> }) {
-  noStore(); // 🔥 PAKSA VERCEL BUAT SELALU AMBIL DATA TERBARU!
+  noStore(); 
   
   const resolvedParams = await params;
   const username = resolvedParams.username;
 
   try {
-    // 1. AMBIL DATA PROFILE DARI DB
     const { data: profile, error: profileError } = await supabase.from('profiles').select('*').eq('username', username).single();
     if (profileError || !profile) return notFound();
 
-    // 2. AMBIL DATA LINKS
     const { data: links } = await supabase.from('links').select('*').eq('user_id', profile.id).eq('is_active', true).order('id', { ascending: false });
 
-    // 3. SETTING TEMA & DESIGN
     const activeTheme = profile.active_theme || 'light';
     const theme = THEMES_DATA[activeTheme] || THEMES_DATA.light;
     
@@ -85,99 +64,107 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
     const customFontName = designConfig.fontFamily && !['sans', 'serif', 'mono'].includes(designConfig.fontFamily) 
       ? `&family=${designConfig.fontFamily.replace(/\s+/g, '+')}:wght@400;700` : '';
 
-    // ==============================================================
-    // 🔥 JURUS PISAH: ETALASE vs LINK BIASA 🔥
-    // ==============================================================
-    const regularLinks = links?.filter((l) => l.layout !== 'etalase') || [];
     const etalaseLinks = links?.filter((l) => l.layout === 'etalase') || [];
+    const regularLinksRaw = links?.filter((l) => l.layout !== 'etalase') || [];
     const shapeClass = designConfig.buttonShape === 'rounded-full' ? 'rounded-full' : designConfig.buttonShape === 'rounded-none' ? 'rounded-none' : 'rounded-xl';
 
+    // =========================================================================================
+    // 🔥 JURUS DEWA SULTAN: FETCHING SPOTIFY & YOUTUBE DI SERVER (ANTI DEFAULT CLUB) 🔥
+    // =========================================================================================
+    const regularLinks = await Promise.all(regularLinksRaw.map(async (link) => {
+      let cat = link.type || 'standard';
+      const url = (link.url || '').toLowerCase();
+      let img = link.image_url || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80";
+
+      // 1. SPOTIFY / APPLE MUSIC
+      if (cat === 'music' || url.includes('spotify') || url.includes('apple')) { 
+        cat = 'music'; 
+        if (!link.image_url) {
+          if (url.includes('spotify.com')) {
+            try {
+              // Nembak API Spotify resmi buat narik gambar cover album/podcast asli!
+              const res = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(link.url)}`, { cache: 'no-store' });
+              if (res.ok) {
+                const data = await res.json();
+                if (data.thumbnail_url) img = data.thumbnail_url;
+                else img = "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&q=80";
+              }
+            } catch (e) {
+              img = "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&q=80";
+            }
+          } else {
+             img = "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&q=80"; 
+          }
+        }
+      } 
+      // 2. YOUTUBE
+      else if (cat === 'video' || url.includes('youtube') || url.includes('youtu.be')) { 
+        cat = 'video'; 
+        const ytMatch = link.url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+        if (ytMatch && !link.image_url) {
+          img = `https://img.youtube.com/vi/${ytMatch[1]}/maxresdefault.jpg`; 
+        } else if (!link.image_url) {
+          img = "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400&q=80";
+        }
+      } 
+      // 3. TOKO ONLINE
+      else if (cat === 'store' || url.includes('tokopedia') || url.includes('shopee')) { 
+        cat = 'store'; 
+        if (!link.image_url) img = "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=400&q=80"; 
+      }
+
+      return { ...link, processedCat: cat, processedImg: img };
+    }));
+
     return (
-      <div 
-        className={`min-h-screen w-full flex flex-col items-center py-16 px-4 sm:px-0 transition-all duration-300 relative ${theme.bgTheme}`} 
-        style={{ ...customBgStyle, ...getFontFamily() }}
-      >
-        {/* INJEK FONT */}
+      <div className={`min-h-screen w-full flex flex-col items-center py-16 px-4 sm:px-0 transition-all duration-300 relative ${theme.bgTheme}`} style={{ ...customBgStyle, ...getFontFamily() }}>
         <style dangerouslySetInnerHTML={{__html: `
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Playfair+Display:ital,wght@0,700;1,700&family=Space+Mono:wght@400;700${customFontName}&display=swap');
         `}} />
 
-        {/* 🔥 MESIN PELACAK GOOGLE ANALYTICS 🔥 */}
         {profile?.ga_id && (
           <>
             <Script src={`https://www.googletagmanager.com/gtag/js?id=${profile.ga_id}`} strategy="afterInteractive" />
-            <Script id="google-analytics" strategy="afterInteractive">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${profile.ga_id}');
-              `}
-            </Script>
+            <Script id="google-analytics" strategy="afterInteractive">{`window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', '${profile.ga_id}');`}</Script>
           </>
         )}
 
-        {/* ============================================================== */}
-        {/* 🔥 JURUS HANCURIN GAMBAR LAMA (THE REAL FIX) 🔥 */}
-        {/* ============================================================== */}
         {activeTheme === 'custom' && profile?.custom_bg_url?.length > 5 ? (
           <img key="custom-bg" src={profile.custom_bg_url} alt="Bg" className="fixed inset-0 w-full h-full object-cover z-0 transition-all duration-700" />
         ) : theme?.bgImage ? (
           <img key="theme-bg" src={theme.bgImage} alt="Bg" className="fixed inset-0 w-full h-full object-cover z-0 transition-all duration-700" />
         ) : null}
         
-        {/* 🔥 SISTEM BARU: Hanya redup kalau di constants ditulis 'redup: true' */}
-        {theme?.redup === true && (
-          <div className="fixed inset-0 bg-black/40 z-[5] transition-all duration-700"></div>
-        )}
+        {theme?.redup === true && <div className="fixed inset-0 bg-black/40 z-[5] transition-all duration-700"></div>}
 
-        {/* 🔥 CONTAINER UTAMA */}
         <div className="w-full max-w-[480px] flex flex-col items-center relative z-10 mx-auto">
           
-          {/* 🔥 AVATAR DINAMIS */}
           <div className="w-[96px] h-[96px] shrink-0 bg-white rounded-full mb-4 flex items-center justify-center shadow-lg border-[3px] border-white/60 overflow-hidden relative">
             {profile.profile_image ? (
               <img src={profile.profile_image} alt={`@${username}`} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full bg-gray-900 flex items-center justify-center text-white font-bold text-4xl uppercase tracking-widest">
-                {profile.username?.charAt(0) || 'U'}
-              </div>
+              <div className="w-full h-full bg-gray-900 flex items-center justify-center text-white font-bold text-4xl uppercase tracking-widest">{profile.username?.charAt(0) || 'U'}</div>
             )}
           </div>
 
-          {/* USERNAME & VERIFIED */}
           <div className="flex justify-center items-center w-full mb-1.5 relative">
             <div className="relative flex items-center">
-              <h3 className={`font-bold text-[20px] tracking-tight drop-shadow-md ${theme.textTheme}`} style={customTextStyle}>
-                @{profile.username}
-              </h3>
-              {profile.is_verified && (
-                <div className="absolute left-full ml-1.5 flex items-center top-1/2 -translate-y-1/2">
-                  <BadgeCheck size={20} className="text-blue-500 fill-[#E0E7FF] drop-shadow-sm" />
-                </div>
-              )}
+              <h3 className={`font-bold text-[20px] tracking-tight drop-shadow-md ${theme.textTheme}`} style={customTextStyle}>@{profile.username}</h3>
+              {profile.is_verified && <div className="absolute left-full ml-1.5 flex items-center top-1/2 -translate-y-1/2"><BadgeCheck size={20} className="text-blue-500 fill-[#E0E7FF] drop-shadow-sm" /></div>}
             </div>
           </div>
           
-          {/* BIO */}
-          <p className={`text-[15px] mt-1 mb-6 text-center font-medium opacity-90 drop-shadow-md max-w-sm ${theme.textTheme}`} style={customTextStyle}>
-            {profile.bio || 'Welcome to my page!'}
-          </p>
+          <p className={`text-[15px] mt-1 mb-6 text-center font-medium opacity-90 drop-shadow-md max-w-sm ${theme.textTheme}`} style={customTextStyle}>{profile.bio || 'Welcome to my page!'}</p>
 
-          {/* SOCIAL ICONS */}
           <div className={`flex items-center justify-center gap-5 mb-8 ${theme.textTheme}`} style={customTextStyle}>
              {profile.instagram && <a href={profile.instagram} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform"><BrandIcons.instagram /></a>}
              {profile.tiktok && <a href={profile.tiktok} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform"><BrandIcons.tiktok /></a>}
              {profile.x && <a href={profile.x} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform"><BrandIcons.x /></a>}
              {profile.facebook && <a href={profile.facebook} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform"><BrandIcons.facebook /></a>}
-             {!profile.instagram && !profile.tiktok && !profile.x && !profile.facebook && (
-               <a href={`mailto:hello@${profile.username}.com`} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform opacity-50"><Mail size={22} /></a>
-             )}
+             {!profile.instagram && !profile.tiktok && !profile.x && !profile.facebook && (<a href={`mailto:hello@${profile.username}.com`} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform opacity-50"><Mail size={22} /></a>)}
           </div>
 
-          {/* ========================================================= */}
-          {/* 🔥 1. GRID ETALASE (2x2) 🔥 */}
-          {/* ========================================================= */}
+          {/* 🔥 GRID ETALASE 🔥 */}
           {etalaseLinks.length > 0 && (
             <div className="w-full mb-8 px-1">
               <h3 className={`font-black text-[15px] tracking-wide mb-4 pl-1 flex items-center gap-2 ${theme.textTheme}`} style={customTextStyle}>
@@ -185,105 +172,55 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
               </h3>
               <div className="grid grid-cols-2 gap-3">
                {etalaseLinks.map((product) => {
-  const btnStyleStr = designConfig.colorBtn ? (isOutline ? { borderColor: designConfig.colorBtn, color: designConfig.colorBtn, backgroundColor: 'transparent', borderWidth: '2px' } : { backgroundColor: designConfig.colorBtn, color: '#fff', borderColor: 'transparent' }) : {};
-  const etalaseShapeClass = designConfig.buttonShape === 'rounded-full' ? 'rounded-[24px]' : designConfig.buttonShape === 'rounded-none' ? 'rounded-none' : 'rounded-2xl';
+                  const btnStyleStr = designConfig.colorBtn ? (isOutline ? { borderColor: designConfig.colorBtn, color: designConfig.colorBtn, backgroundColor: 'transparent', borderWidth: '2px' } : { backgroundColor: designConfig.colorBtn, color: '#fff', borderColor: 'transparent' }) : {};
+                  const etalaseShapeClass = designConfig.buttonShape === 'rounded-full' ? 'rounded-[24px]' : designConfig.buttonShape === 'rounded-none' ? 'rounded-none' : 'rounded-2xl';
 
-  return (
-    <a key={product.id} href={`/api/go?id=${product.id}`} target="_blank" rel="noopener noreferrer" className={`block w-full transition-all hover:scale-[1.02] shadow-sm backdrop-blur-md cursor-pointer overflow-hidden flex flex-col ${isOutline && !designConfig.colorBtn ? 'border-2 border-current bg-transparent' : theme.btnTheme} ${etalaseShapeClass}`} style={btnStyleStr}>
-      
-      {/* GAMBAR PRODUK + PITA PROMO */}
-      <div className="w-full aspect-square relative bg-black/5 flex items-center justify-center overflow-hidden border-b border-black/5">
-        {product.image_url ? (
-          <img src={product.image_url} alt={product.title} className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" />
-        ) : (
-          <ShoppingBag className="opacity-20" size={32}/>
-        )}
-
-        {/* 🎀 PITA PROMO (Hanya muncul kalau diisi) */}
-        {product.promo_label && (
-          <div className="absolute top-2 left-2 bg-orange-500 text-white text-[9px] font-black px-2 py-1 rounded-md shadow-lg animate-pulse uppercase tracking-tighter">
-            {product.promo_label}
-          </div>
-        )}
-      </div>
-
-      {/* DETAIL PRODUK (JUDUL + HARGA) */}
-      <div className="p-3 flex-1 flex flex-col justify-between">
-        <div>
-          <span className="font-bold text-[13px] leading-tight line-clamp-2 w-full text-left mb-2">{product.title}</span>
-          
-          {/* 💰 HARGA CORET & HARGA ASLI */}
-          <div className="flex flex-wrap items-center gap-1.5">
-             {product.price && (
-               <span className="font-black text-[14px] text-green-500 tracking-tighter">Rp{product.price}</span>
-             )}
-             {product.price_sale && (
-               <span className="text-[10px] font-bold opacity-50 line-through">Rp{product.price_sale}</span>
-             )}
-          </div>
-        </div>
-
-        <span className="text-[9px] font-black uppercase tracking-widest opacity-60 mt-3 block border-t border-black/5 pt-2">
-          Beli Sekarang →
-        </span>
-      </div>
-    </a>
-  );
-})}
+                  return (
+                    <a key={product.id} href={`/api/go?id=${product.id}`} target="_blank" rel="noopener noreferrer" className={`block w-full transition-all hover:scale-[1.02] shadow-sm backdrop-blur-md cursor-pointer overflow-hidden flex flex-col ${isOutline && !designConfig.colorBtn ? 'border-2 border-current bg-transparent' : theme.btnTheme} ${etalaseShapeClass}`} style={btnStyleStr}>
+                      <div className="w-full aspect-square relative bg-black/5 flex items-center justify-center overflow-hidden border-b border-black/5">
+                        {product.image_url ? (<img src={product.image_url} alt={product.title} className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" />) : (<ShoppingBag className="opacity-20" size={32}/>)}
+                        {product.promo_label && (<div className="absolute top-2 left-2 bg-orange-500 text-white text-[9px] font-black px-2 py-1 rounded-md shadow-lg animate-pulse uppercase tracking-tighter">{product.promo_label}</div>)}
+                      </div>
+                      <div className="p-3 flex-1 flex flex-col justify-between">
+                        <div>
+                          <span className="font-bold text-[13px] leading-tight line-clamp-2 w-full text-left mb-2">{product.title}</span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                             {product.price && (<span className="font-black text-[14px] text-green-500 tracking-tighter">Rp{product.price}</span>)}
+                             {product.price_sale && (<span className="text-[10px] font-bold opacity-50 line-through">Rp{product.price_sale}</span>)}
+                          </div>
+                        </div>
+                        <span className="text-[9px] font-black uppercase tracking-widest opacity-60 mt-3 block border-t border-black/5 pt-2">Beli Sekarang →</span>
+                      </div>
+                    </a>
+                  );
+                })}
               </div>
             </div>
           )}
 
-          {/* ========================================================= */}
-          {/* 🔥 2. LIST LINK BIASA (MENURUN) 🔥 */}
-          {/* ========================================================= */}
+          {/* 🔥 LIST LINK BIASA 🔥 */}
           <div className="w-full flex flex-col gap-4 mb-16 px-1">
             {regularLinks.length > 0 && etalaseLinks.length > 0 && (
               <h3 className={`font-black text-[15px] tracking-wide mt-2 mb-1 pl-1 ${theme.textTheme}`} style={customTextStyle}>Link Lainnya</h3>
             )}
 
             {regularLinks.map((link) => {
-              // ==========================================
-              // 🔥 LOGIKA GAMBAR BARU (ANTI SEPATU MERAH) 🔥
-              // ==========================================
-              let cat = link.type || 'standard';
+              // Pake data hasil tarikan API dari atas
+              const cat = link.processedCat;
+              const img = link.processedImg;
               const url = (link.url || '').toLowerCase();
               const title = link.title || 'My Link';
 
-              // 1. Prioritaskan gambar yang diupload user dari database! (JANGAN DITIMPA)
-              let img = link.image_url || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80";
-
-              if (cat === 'music' || url.includes('spotify.com') || url.includes('apple.com')) { 
-                cat = 'music'; 
-                if (!link.image_url) img = "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&q=80"; 
-              } 
-              else if (cat === 'video' || url.includes('youtube.com') || url.includes('youtu.be')) { 
-                cat = 'video'; 
-                const ytMatch = link.url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/); 
-                if (ytMatch && !link.image_url) img = `https://img.youtube.com/vi/${ytMatch[1]}/maxresdefault.jpg`; 
-              } 
-              else if (cat === 'store' || url.includes('tokopedia.com') || url.includes('shopee.co')) { 
-                cat = 'store'; 
-                // Kalau user gak upload foto, pake gambar Tas Belanja Estetik (Bukan Sepatu Nike!)
-                if (!link.image_url) img = "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=400&q=80"; 
-              }
               const isFeatured = link.layout === 'featured';
               const isMinimal = link.layout === 'minimal';
               
-              const btnStyleStr = designConfig.colorBtn ? (
-                isOutline 
-                  ? { borderColor: designConfig.colorBtn, color: designConfig.colorBtn, backgroundColor: 'transparent', borderWidth: '2px' } 
-                  : { backgroundColor: designConfig.colorBtn, color: '#fff', borderColor: 'transparent' }
-              ) : {};
-
+              const btnStyleStr = designConfig.colorBtn ? (isOutline ? { borderColor: designConfig.colorBtn, color: designConfig.colorBtn, backgroundColor: 'transparent', borderWidth: '2px' } : { backgroundColor: designConfig.colorBtn, color: '#fff', borderColor: 'transparent' }) : {};
               const baseClasses = `block w-full transition-all hover:scale-[1.02] shadow-sm backdrop-blur-md cursor-pointer ${isOutline && !designConfig.colorBtn ? 'border-2 border-current bg-transparent' : theme.btnTheme}`;
 
               if (isFeatured && cat !== 'standard') {
                 return (
                   <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className={`${baseClasses} rounded-[24px] p-3 flex flex-col gap-3 relative overflow-hidden`} style={btnStyleStr}>
-                    <div className="w-full aspect-[2/1] rounded-[16px] overflow-hidden shadow-sm relative bg-black/5 flex items-center justify-center">
-                       <img src={img} className="w-full h-full object-cover" alt="Cover" />
-                    </div>
+                    <div className="w-full aspect-[2/1] rounded-[16px] overflow-hidden shadow-sm relative bg-black/5 flex items-center justify-center"><img src={img} className="w-full h-full object-cover" alt="Cover" /></div>
                     <div className="px-2 pb-2 text-left relative flex justify-between items-end">
                        <div className="flex-1 overflow-hidden pr-2">
                          <h4 className="font-extrabold text-[16px] truncate leading-tight">{title}</h4>
@@ -291,9 +228,7 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
                             {cat === 'music' && <Music size={14} />}
                             {cat === 'video' && <Video size={14} />}
                             {cat === 'store' && <ShoppingBag size={14} />}
-                            <span className="text-[12px] font-bold uppercase tracking-wider">
-                              {cat === 'music' ? 'Listen Now' : cat === 'video' ? 'Watch Video' : 'Shop Now'}
-                            </span>
+                            <span className="text-[12px] font-bold uppercase tracking-wider">{cat === 'music' ? 'Listen Now' : cat === 'video' ? 'Watch Video' : 'Shop Now'}</span>
                          </div>
                        </div>
                        <div className="p-2 opacity-50"><MoreVertical size={18} /></div>
@@ -305,9 +240,7 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
               if (cat !== 'standard' && !isMinimal) {
                 return (
                   <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className={`${baseClasses} ${shapeClass} p-2 flex justify-between items-center overflow-hidden`} style={btnStyleStr}>
-                    <div className="w-[52px] h-[52px] rounded-[12px] bg-black/5 overflow-hidden flex-shrink-0 shadow-sm z-10 flex items-center justify-center">
-                       <img src={img} className="w-full h-full object-cover" alt="Thumb" />
-                    </div>
+                    <div className="w-[52px] h-[52px] rounded-[12px] bg-black/5 overflow-hidden flex-shrink-0 shadow-sm z-10 flex items-center justify-center"><img src={img} className="w-full h-full object-cover" alt="Thumb" /></div>
                     <div className="flex-1 flex flex-col items-center justify-center px-3 z-0 overflow-hidden">
                        <span className="font-bold text-[15px] truncate leading-tight text-center w-full">{title}</span>
                        <span className="text-[12px] font-medium truncate opacity-70 mt-0.5 capitalize flex items-center justify-center gap-1 w-full">
@@ -323,14 +256,13 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
               }
 
               let IconToRender = null;
-              if (link.custom_icon && ICON_MAP[link.custom_icon]) {
-                const CustomIcon = ICON_MAP[link.custom_icon];
-                IconToRender = <CustomIcon size={22} strokeWidth={1.5} />;
-              } else if (url.includes('spotify.com')) IconToRender = <BrandIcons.spotify />;
+              // 🔥 FIX LOGIKA DETEKSI ICON BIAR BERSIH DARI TULISAN ANEH
+              if (link.custom_icon && ICON_MAP[link.custom_icon]) { const CustomIcon = ICON_MAP[link.custom_icon]; IconToRender = <CustomIcon size={22} strokeWidth={1.5} />; } 
+              else if (url.includes('spotify') || url.includes('apple.com')) IconToRender = <BrandIcons.spotify />;
               else if (url.includes('youtube.com') || url.includes('youtu.be')) IconToRender = <BrandIcons.youtube />;
               else if (url.includes('tiktok.com')) IconToRender = <BrandIcons.tiktok />;
               else if (url.includes('instagram.com')) IconToRender = <BrandIcons.instagram />;
-              else if (url.includes('maps.google') || url.includes('goo.gl/maps') || url.includes('google.com/maps') || url.includes('maps.app.goo.gl') || url.includes('google.com/maps')) {IconToRender = <BrandIcons.google_maps />; }
+              else if (url.includes('maps.google') || url.includes('goo.gl/maps')) IconToRender = <BrandIcons.google_maps />;
               else if (url.includes('wa.me') || url.includes('whatsapp.com')) IconToRender = <BrandIcons.whatsapp />;
               else if (cat === 'music') IconToRender = <Music size={22} strokeWidth={1.5} />;
               else if (cat === 'video') IconToRender = <Video size={22} strokeWidth={1.5} />;
@@ -338,21 +270,14 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
               
               return (
                 <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className={`${baseClasses} ${shapeClass} py-4 px-4 flex justify-between items-center`} style={btnStyleStr}>
-                   <div className="w-10 flex justify-center items-center opacity-90 z-10">
-                     {IconToRender ? IconToRender : <div className="w-5"></div>}
-                   </div>
-                   <span className="flex-1 font-bold text-[15px] truncate text-center px-2 z-0">
-                     {title}
-                   </span>
-                   <div className="w-10 flex justify-center items-center flex-shrink-0 z-10 opacity-50">
-                     <MoreVertical size={18} />
-                   </div>
+                   <div className="w-10 flex justify-center items-center opacity-90 z-10">{IconToRender ? IconToRender : <div className="w-5"></div>}</div>
+                   <span className="flex-1 font-bold text-[15px] truncate text-center px-2 z-0">{title}</span>
+                   <div className="w-10 flex justify-center items-center flex-shrink-0 z-10 opacity-50"><MoreVertical size={18} /></div>
                 </a>
               );
             })}
           </div>
 
-          {/* WATERMARK BAWAH */}
           <div className={`mt-auto pt-4 pb-8 flex items-center justify-center gap-2 opacity-70 font-bold text-[12px] uppercase tracking-widest ${theme.textTheme}`} style={customTextStyle}>
              <div className="w-4 h-4 bg-current rounded-sm flex items-center justify-center text-[10px] text-white" style={customBgStyle.backgroundColor ? { backgroundColor: customTextStyle.color, color: customBgStyle.backgroundColor } : {}}>U</div>
              <a href="/" className="hover:opacity-100 transition-opacity">Powered by UniTap</a>
@@ -361,7 +286,6 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
         </div>
       </div>
     );
-
   } catch (error) {
     return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-400 font-bold">Failed to load profile.</div>;
   }
