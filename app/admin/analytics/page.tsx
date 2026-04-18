@@ -1,93 +1,120 @@
 // app/admin/analytics/page.tsx
 "use client";
-import { useAdmin } from '@/context/AdminContext';
-import { 
-  BarChart3, MousePointerClick, Eye, Zap, 
-  ArrowUpRight, Target, Flame 
-} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { MousePointer2, Smartphone, Monitor, Globe } from 'lucide-react';
 
-export default function AnalyticsPage() {
-  const { links } = useAdmin();
+export default function AnalyticsDashboard() {
+  const [data, setData] = useState<any[]>([]);
+  const [stats, setStats] = useState({ total: 0, mobile: 0, desktop: 0 });
+  const [loading, setLoading] = useState(true);
 
-  // 🔥 Logika Data Real
-  const totalClicks = links.reduce((sum: number, link: any) => sum + (link.clicks || 0), 0);
-  const totalViews = totalClicks === 0 ? 0 : Math.floor(totalClicks * 2.4); 
-  const ctr = totalViews > 0 ? Math.round((totalClicks / totalViews) * 100) : 0;
+  useEffect(() => {
+    fetchAnalytics();
+  }, []);
+
+  const fetchAnalytics = async () => {
+    // 1. Ambil data dari tabel mata-mata kita
+    const { data: clicks, error } = await supabase
+      .from('link_analytics')
+      .select('*, links(title)')
+      .order('created_at', { ascending: false });
+
+    if (!error && clicks) {
+      setData(clicks);
+      
+      // 2. Itung Statistik Cepat
+      const total = clicks.length;
+      const mobile = clicks.filter(c => c.device_type === 'Mobile').length;
+      const desktop = total - mobile;
+      setStats({ total, mobile, desktop });
+    }
+    setLoading(false);
+  };
+
+  // Ngolah data buat Grafik Bar (Klik per Link)
+  const chartData = data.reduce((acc: any[], curr) => {
+    const title = curr.links?.title || 'Unknown';
+    const existing = acc.find(a => a.name === title);
+    if (existing) existing.clicks++;
+    else acc.push({ name: title, clicks: 1 });
+    return acc;
+  }, []).sort((a, b) => b.clicks - a.clicks).slice(0, 5);
+
+  if (loading) return <div className="p-10 text-center font-bold opacity-50">Mengambil data dari pusat komando...</div>;
 
   return (
-    <div className="max-w-4xl w-full mx-auto pb-20 animate-in fade-in duration-700 p-6 lg:p-10">
-      <div className="mb-10 flex justify-between items-end">
-        <div>
-          <h1 className="text-4xl font-black tracking-tighter text-gray-900">Insights</h1>
-          <p className="text-gray-500 font-bold text-sm mt-1">Real-time performance of your UnikLink.</p>
-        </div>
-        <div className="hidden md:flex items-center gap-2 bg-[#d2e823]/20 text-[#254f1a] px-4 py-2 rounded-2xl font-black text-xs border border-[#d2e823]/30">
-          <Flame size={14} /> 24h Update
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50 p-6 lg:p-12 font-sans text-gray-900">
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-3xl font-black mb-8 tracking-tighter">Command Center Analytics 🛰️</h1>
 
-      {/* STATS GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden group">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#7949F6] blur-[60px] opacity-10 group-hover:opacity-20 transition-opacity"></div>
-          <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Views</p>
-          <div className="flex items-baseline gap-2">
-            <h2 className="text-5xl font-black text-gray-900">{totalViews}</h2>
-            <span className="text-green-500 font-bold text-xs flex items-center"><ArrowUpRight size={14}/> 12%</span>
+        {/* 🏆 KARTU STATISTIK UTAMA */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl"><MousePointer2 size={24} /></div>
+              <span className="text-xs font-black text-blue-500 uppercase tracking-widest">Total Klik</span>
+            </div>
+            <h2 className="text-4xl font-black">{stats.total}</h2>
+            <p className="text-sm text-gray-400 mt-1 font-medium">Interaksi real-time</p>
+          </div>
+
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-3 bg-purple-50 text-purple-600 rounded-2xl"><Smartphone size={24} /></div>
+              <span className="text-xs font-black text-purple-500 uppercase tracking-widest">Mobile</span>
+            </div>
+            <h2 className="text-4xl font-black">{stats.mobile}</h2>
+            <p className="text-sm text-gray-400 mt-1 font-medium">{Math.round((stats.mobile/stats.total)*100) || 0}% Pengguna HP</p>
+          </div>
+
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-3 bg-orange-50 text-orange-600 rounded-2xl"><Monitor size={24} /></div>
+              <span className="text-xs font-black text-orange-500 uppercase tracking-widest">Desktop</span>
+            </div>
+            <h2 className="text-4xl font-black">{stats.desktop}</h2>
+            <p className="text-sm text-gray-400 mt-1 font-medium">{Math.round((stats.desktop/stats.total)*100) || 0}% Pengguna PC</p>
           </div>
         </div>
 
-        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden group">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#d2e823] blur-[60px] opacity-20 group-hover:opacity-40 transition-opacity"></div>
-          <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Clicks</p>
-          <div className="flex items-baseline gap-2">
-            <h2 className="text-5xl font-black text-gray-900">{totalClicks}</h2>
-            <span className="text-green-500 font-bold text-xs flex items-center"><ArrowUpRight size={14}/> 8%</span>
+        {/* 📊 GRAFIK UTAMA */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
+            <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
+              <Globe size={20} className="text-blue-500" /> Link Paling Rame
+            </h3>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <XAxis dataKey="name" hide />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                  />
+                  <Bar dataKey="clicks" fill="#3B82F6" radius={[8, 8, 8, 8]} barSize={40} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
 
-        <div className="bg-black p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#7949F6]/20 to-[#d2e823]/20 opacity-40"></div>
-          <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 relative z-10">Avg. CTR</p>
-          <h2 className="text-5xl font-black text-white relative z-10">{ctr}%</h2>
-          <div className="mt-4 w-full h-1.5 bg-white/10 rounded-full overflow-hidden relative z-10">
-            <div className="h-full bg-gradient-to-r from-[#7949F6] to-[#d2e823] rounded-full" style={{ width: `${ctr}%` }}></div>
-          </div>
-        </div>
-      </div>
-
-      {/* TOP LINKS LIST */}
-      <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-8 py-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
-          <h3 className="font-black text-gray-900 uppercase tracking-wider text-xs flex items-center gap-2">
-            <Target size={16} className="text-[#7949F6]" /> Top Performing Links
-          </h3>
-        </div>
-        <div className="divide-y divide-gray-50">
-          {links.length === 0 ? (
-            <div className="p-12 text-center text-gray-400 font-bold italic">No link data yet...</div>
-          ) : (
-            links.sort((a: any, b: any) => (b.clicks || 0) - (a.clicks || 0)).map((link: any, i: number) => (
-              <div key={link.id} className="p-6 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
-                <div className="flex items-center gap-5 overflow-hidden pr-4">
-                  <span className="text-2xl font-black text-gray-200 w-8">{i + 1}</span>
-                  <div className="truncate">
-                    <p className="font-bold text-gray-900 truncate leading-tight">{link.title}</p>
-                    <p className="text-xs font-bold text-gray-400 truncate mt-1">{link.url}</p>
+          {/* 📜 LOG AKTIVITAS TERAKHIR */}
+          <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
+            <h3 className="font-bold text-lg mb-6">Aktivitas Terakhir</h3>
+            <div className="space-y-4">
+              {data.slice(0, 5).map((log) => (
+                <div key={log.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                  <div>
+                    <p className="font-bold text-sm">Klik di "{log.links?.title}"</p>
+                    <p className="text-xs text-gray-400">{log.device_type} • {log.referrer}</p>
                   </div>
+                  <span className="text-[10px] font-black text-gray-300 uppercase">
+                    {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-xl font-black text-gray-900 leading-none">{link.clicks || 0}</p>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Clicks</p>
-                  </div>
-                  <div className="w-1.5 h-10 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="w-full bg-[#7949F6]" style={{ height: `${(link.clicks / (totalClicks || 1)) * 100}%` }}></div>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -13,6 +13,41 @@ export const THEMES_DATA: Record<string, any> = {
   matcha: { id: 'matcha', name: 'Matcha Green', bgTheme: 'bg-[#E8F5E9]', textTheme: 'text-[#1B5E20]', btnTheme: 'bg-white text-[#2E7D32] shadow-sm hover:shadow-md' },
   glass: { id: 'glass', name: 'Glassmorphism', bgTheme: 'bg-gradient-to-br from-purple-500 to-pink-500', textTheme: 'text-white drop-shadow-md', btnTheme: 'bg-white/20 border border-white/30 text-white backdrop-blur-md shadow-lg hover:bg-white/30' },
   cyber: { id: 'cyber', name: 'Cyberpunk', bgTheme: 'bg-black', textTheme: 'text-[#00ff9f] drop-shadow-[0_0_8px_rgba(0,255,159,0.8)]', btnTheme: 'bg-transparent border border-[#00ff9f] text-[#00ff9f] shadow-[0_0_10px_rgba(0,255,159,0.3)] hover:bg-[#00ff9f] hover:text-black' },
+  synthwave: {
+    id: 'synthwave',
+    name: 'Retro Synthwave',
+    bgTheme: 'bg-gradient-to-br from-indigo-900 via-purple-900 to-fuchsia-900',
+    textTheme: 'text-fuchsia-200 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]',
+    btnTheme: 'bg-fuchsia-600/20 border border-fuchsia-500 text-fuchsia-100 shadow-[0_0_15px_rgba(217,70,239,0.4)] hover:bg-fuchsia-500 hover:text-white backdrop-blur-sm'
+  },
+  sultan: {
+    id: 'sultan',
+    name: 'Royal Gold',
+    bgTheme: 'bg-[#0a0a0a]',
+    textTheme: 'text-[#d4af37] drop-shadow-[0_1px_2px_rgba(212,175,55,0.3)]',
+    btnTheme: 'bg-[#141414] border border-[#d4af37]/50 text-[#d4af37] shadow-[0_4px_14px_0_rgba(212,175,55,0.15)] hover:bg-[#d4af37] hover:text-black hover:border-transparent'
+  },
+  Ijo: {
+    id: 'matcha',
+    name: 'Matcha Latte',
+    bgTheme: 'bg-[#F4F1DE]',
+    textTheme: 'text-[#3D4035]',
+    btnTheme: 'bg-[#81B29A] border border-transparent text-white shadow-md hover:bg-[#3D4035] hover:shadow-lg transition-transform hover:-translate-y-1'
+  },
+  Anjay: {
+    id: 'glass',
+    name: 'Holo Glass',
+    bgTheme: 'bg-gradient-to-tr from-pink-300 via-purple-300 to-indigo-400',
+    textTheme: 'text-white drop-shadow-md',
+    btnTheme: 'bg-white/20 backdrop-blur-md border border-white/40 text-white shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] hover:bg-white hover:text-purple-600'
+  },
+  brutal: {
+    id: 'brutal',
+    name: 'Neo Brutalism',
+    bgTheme: 'bg-[#DFD9D6]',
+    textTheme: 'text-black font-black uppercase tracking-tight',
+    btnTheme: 'bg-[#FF4500] border-4 border-black text-white font-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[4px] hover:translate-x-[4px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all'
+  },
   luxury: { id: 'luxury', name: 'Luxury Gold', bgTheme: 'bg-[#1a1a1a]', textTheme: 'text-[#D4AF37]', btnTheme: 'bg-gradient-to-r from-[#BF953F] via-[#FCF6BA] to-[#B38728] text-black shadow-lg font-extrabold hover:scale-[1.02]' },
   retro_cafe: { id: 'retro_cafe', name: 'Retro Cafe', bgTheme: 'bg-[#4A3B32]', textTheme: 'text-white drop-shadow-lg', btnTheme: 'bg-[#FDF6E3]/80 text-[#4A3B32] backdrop-blur-md border border-white/50 shadow-xl hover:bg-[#FDF6E3]' },
   apa: { id: 'apa', name: 'Orange Ahay', bgTheme: 'bg-[#3E2F26]', bgImage: '/apa.png', textTheme: 'text-[#F5E6CA]', btnTheme: 'bg-[#E6D3A3] text-[#3E2F26] border-2 border-[#3E2F26] shadow-[4px_4px_0px_#3E2F26] rounded-xl hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_#3E2F26]' },
