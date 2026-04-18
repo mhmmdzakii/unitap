@@ -247,8 +247,18 @@ export default function MobilePreview({ profile, links, theme, designConfig }: a
             </div>
 
             <div className={`w-full h-full rounded-[40px] relative overflow-hidden transition-all duration-300 ${theme.bgTheme}`} style={{ ...customBgStyle, ...getFontFamily() }}>
-               {theme.bgImage && <img src={theme.bgImage} alt="Bg" className="absolute inset-0 w-full h-full object-cover z-0" />}
-               {theme.bgImage && <div className="absolute inset-0 bg-black/30 z-[5]"></div>}
+               
+               {/* 🔥 JURUS HANCURIN GAMBAR LAMA (THE REAL FIX) 🔥 */}
+               {theme?.id === 'custom' && profile?.custom_bg_url?.length > 5 ? (
+                 <img key="custom-bg" src={profile.custom_bg_url} alt="Bg" className="absolute inset-0 w-full h-full object-cover z-0 transition-all duration-700" />
+               ) : theme?.bgImage ? (
+                 <img key="theme-bg" src={theme.bgImage} alt="Bg" className="absolute inset-0 w-full h-full object-cover z-0 transition-all duration-700" />
+               ) : null}
+
+               {/* 🔥 SISTEM BARU: Hanya redup kalau di constants ditulis 'redup: true' */}
+               {theme?.redup === true && (
+                 <div className="absolute inset-0 bg-black/40 z-[5] transition-all duration-700"></div>
+               )}
                
                <div className="relative z-10 px-5 pt-16 flex flex-col items-center h-full pb-10 overflow-y-auto custom-scrollbar">
                  

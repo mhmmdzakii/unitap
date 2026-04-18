@@ -15,7 +15,7 @@ export default function DesignSettings() {
   
   const [activeDesignTab, setActiveDesignTab] = useState('theme');
   const [showProModal, setShowProModal] = useState(false); 
-  const [isSaving, setIsSaving] = useState(false); // 🔥 STATE BARU BUAT TOMBOL SIMPAN
+  const [isSaving, setIsSaving] = useState(false); 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isPro = profile?.plan_type === 'pro' || profile?.plan_type === 'premium';
@@ -39,7 +39,8 @@ export default function DesignSettings() {
     reader.readAsDataURL(file);
   };
 
-  const handleSelectTheme = (themeId: string, isPremiumTheme: boolean) => {
+  // 🔥 FUNGSI TEMA SUPER AMAN (Anti Profil Hilang)
+  const handleSelectTheme = async (themeId: string, isPremiumTheme: boolean) => {
     if (isPremiumTheme && !isPro) {
       setShowProModal(true);
       return;
@@ -48,11 +49,32 @@ export default function DesignSettings() {
     if (themeId === 'custom') {
       fileInputRef.current?.click();
     } else {
+      const toastId = toast.loading('Menerapkan tema baru...');
       updateThemeInDB(themeId);
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session?.user?.id;
+
+        if (userId) {
+          const { error } = await supabase
+            .from('profiles')
+            .update({ custom_bg_url: "" }) 
+            .eq('id', userId);
+
+          if (error) throw error;
+
+          // 🔥 FIX FINAL MOBILE PREVIEW: Pake "prev" biar data nama & bio GAK KEHAPUS!
+          setProfile((prev: any) => ({ ...prev, active_theme: themeId, custom_bg_url: "" }));
+          
+          toast.success('Tema diterapkan! Foto latar dihapus. 🔥', { id: toastId });
+        }
+      } catch (error: any) {
+        toast.error('Gagal hapus foto latar.', { id: toastId });
+      }
     }
   };
-
-  // 🔥 FUNGSI UPLOAD FOTO PROFIL REAL KE SUPABASE (FIX BYPASS ID)
+  
   const handleUploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -60,56 +82,32 @@ export default function DesignSettings() {
     const toastId = toast.loading('Mengunggah foto...');
 
     try {
-      // 🔥 JALUR BYPASS: Ambil ID langsung dari sesi login!
       const { data: { session } } = await supabase.auth.getSession();
       const userId = session?.user?.id;
-      
-      if (!userId) {
-        throw new Error("Sesi login tidak ditemukan, coba refresh halaman!");
-      }
+      if (!userId) throw new Error("Sesi login tidak ditemukan!");
 
-      // Bikin nama file unik pakai userId biar ga bentrok
       const fileExt = file.name.split('.').pop();
       const fileName = `${userId}-${Math.random()}.${fileExt}`;
 
-      // 1. Upload ke bucket 'avatars'
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, file, { upsert: true });
-
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file, { upsert: true });
       if (uploadError) throw uploadError;
 
-      // 2. Ambil URL publik dari Supabase Storage
-      const { data: publicUrlData } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
-
+      const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
       const imageUrl = publicUrlData.publicUrl;
 
-      // 3. Update kolom profile_image di tabel profiles
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ profile_image: imageUrl })
-        .eq('id', userId); // 👈 Tembak langsung pakai userId asli!
-
+      const { error: updateError } = await supabase.from('profiles').update({ profile_image: imageUrl }).eq('id', userId);
       if (updateError) throw updateError;
 
-      // 4. Update UI seketika
-      setProfile({ ...profile, profile_image: imageUrl });
+      setProfile((prev: any) => ({ ...prev, profile_image: imageUrl }));
       toast.success('Foto profil berhasil diperbarui! 📸', { id: toastId });
-
     } catch (error: any) {
       toast.error('Gagal mengunggah: ' + error.message, { id: toastId });
     }
   };
 
-  // 🔥 FUNGSI BARU BUAT SIMPAN NAMA & BIO KE DATABASE
   const handleSaveProfile = async () => {
-    if (!profile?.id) return;
-    
     setIsSaving(true);
     const toastId = toast.loading('Menyimpan profil...'); 
-    
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const userId = session?.user?.id;
@@ -118,17 +116,12 @@ export default function DesignSettings() {
 
       const { error } = await supabase
         .from('profiles')
-        .update({ 
-          username: profile.username, 
-          bio: profile.bio 
-        })
+        .update({ username: profile?.username, bio: profile?.bio })
         .eq('id', userId);
 
       if (error) throw error;
-      
       toast.success('Profil berhasil disimpan permanen! 🔥', { id: toastId });
     } catch (error: any) {
-      console.error("Error save profile:", error);
       toast.error('Gagal simpan: ' + error.message, { id: toastId });
     } finally {
       setIsSaving(false);
@@ -147,7 +140,6 @@ export default function DesignSettings() {
       `}} />
       
       <div className="w-full bg-white pt-4 pb-4 px-8 sticky top-0 z-20 border-b border-gray-100 mb-6">
-        {/* 🔥 FIX NYA DI SINI: Gue ganti pb-2 jadi py-2 (kasih ruang atas bawah) biar ring ijonya gak nabrak atap! */}
         <div className="flex gap-2.5 overflow-x-auto hide-scroll py-2 px-1">
           {designTabs.map((item) => (
             <button 
@@ -186,7 +178,6 @@ export default function DesignSettings() {
                           onClick={() => handleSelectTheme(theme.id, isPremiumTheme)} 
                           className={`w-full aspect-[1/2.2] rounded-[30px] p-4 flex flex-col justify-between cursor-pointer border-[4px] transition-all duration-300 relative overflow-hidden ${theme.bgTheme} ${activeTheme === theme.id ? 'border-[#7949F6] scale-[1.03] shadow-[0_10px_30px_rgba(121,73,246,0.2)]' : 'border-transparent shadow-sm hover:shadow-md hover:-translate-y-1'}`}
                         >
-                          {/* BADGE PRO */}
                           {isPremiumTheme && <div className="absolute top-2 right-2 bg-[#d2e823] text-black text-[10px] font-extrabold px-2 py-1 rounded-full z-30 flex items-center gap-1"><Crown size={10}/> PRO</div>}
                           
                           {theme.id === 'custom' ? (
@@ -202,7 +193,6 @@ export default function DesignSettings() {
                             </>
                           )}
 
-                          {/* 🔥 OVERLAY GEMBOK */}
                           {locked && (
                             <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px] z-20 flex items-center justify-center">
                               <div className="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
@@ -238,32 +228,20 @@ export default function DesignSettings() {
                       <button className="w-full py-3 bg-white border border-gray-200 text-gray-900 rounded-xl text-sm font-bold shadow-sm hover:border-gray-300 transition-colors flex items-center justify-center gap-2">
                         <Upload size={16}/> Pilih Foto Profil
                       </button>
-                      {/* 🔥 INPUT FILE REAL */}
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={handleUploadImage} 
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
-                        title="Unggah foto baru"
-                      />
+                      <input type="file" accept="image/*" onChange={handleUploadImage} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" title="Unggah foto baru" />
                    </div>
                 </div>
                 <div className="flex flex-col gap-5">
                    <div>
                       <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Nama Profil</label>
-                      <input type="text" value={profile?.username || ''} onChange={e => setProfile({...profile, username: e.target.value})} className="w-full px-5 py-4 bg-[#F6F7F5] border-transparent focus:bg-white border focus:border-[#7949F6] rounded-xl outline-none font-bold text-gray-900 transition-all"/>
+                      <input type="text" value={profile?.username || ''} onChange={e => setProfile((prev:any) => ({...prev, username: e.target.value}))} className="w-full px-5 py-4 bg-[#F6F7F5] border-transparent focus:bg-white border focus:border-[#7949F6] rounded-xl outline-none font-bold text-gray-900 transition-all"/>
                    </div>
                    <div>
                       <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Bio Singkat</label>
-                      <textarea value={profile?.bio || ''} onChange={e => setProfile({...profile, bio: e.target.value})} rows={3} className="w-full px-5 py-4 bg-[#F6F7F5] border-transparent focus:bg-white border focus:border-[#7949F6] rounded-xl outline-none font-medium text-gray-700 transition-all resize-none"></textarea>
+                      <textarea value={profile?.bio || ''} onChange={e => setProfile((prev:any) => ({...prev, bio: e.target.value}))} rows={3} className="w-full px-5 py-4 bg-[#F6F7F5] border-transparent focus:bg-white border focus:border-[#7949F6] rounded-xl outline-none font-medium text-gray-700 transition-all resize-none"></textarea>
                    </div>
                    
-                   {/* 🔥 INI TOMBOL PENYELAMATNYA 🔥 */}
-                   <button 
-                     onClick={handleSaveProfile} 
-                     disabled={isSaving}
-                     className={`w-full py-4 rounded-xl font-bold text-white transition-all mt-2 ${isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-black hover:bg-gray-800 hover:scale-[1.02] shadow-md'}`}
-                   >
+                   <button onClick={handleSaveProfile} disabled={isSaving} className={`w-full py-4 rounded-xl font-bold text-white transition-all mt-2 ${isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-black hover:bg-gray-800 hover:scale-[1.02] shadow-md'}`}>
                      {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
                    </button>
                 </div>
@@ -286,7 +264,6 @@ export default function DesignSettings() {
                     <h2 className="text-xl font-black text-gray-900">Warna Latar Kustom</h2>
                     {designConfig.colorBg && <button onClick={() => updateDesignConfigDB('colorBg', '')} className="text-xs font-bold text-red-500 flex items-center gap-1 hover:underline"><RefreshCw size={12}/> Reset</button>}
                   </div>
-                  
                   <div className="flex items-center gap-4">
                     <div className="relative w-16 h-16 rounded-full overflow-hidden border-4 border-gray-100 shadow-sm cursor-pointer hover:scale-105 transition-transform">
                       <input type="color" value={designConfig.colorBg || '#ffffff'} onChange={(e) => updateDesignConfigDB('colorBg', e.target.value)} className="absolute -top-4 -left-4 w-24 h-24 cursor-pointer" />
@@ -321,12 +298,10 @@ export default function DesignSettings() {
                        </div>
                      ))}
                   </div>
-
                   <div className="flex justify-between items-center mb-6 pt-8 border-t border-gray-100">
                     <h2 className="text-xl font-black text-gray-900">Ubah Warna Teks</h2>
                     {designConfig.colorText && <button onClick={() => updateDesignConfigDB('colorText', '')} className="text-xs font-bold text-red-500 flex items-center gap-1 hover:underline"><RefreshCw size={12}/> Reset</button>}
                   </div>
-                  
                   <div className="flex items-center gap-4">
                     <div className="relative w-14 h-14 rounded-full overflow-hidden border-4 border-gray-100 shadow-sm cursor-pointer hover:scale-105 transition-transform">
                       <input type="color" value={designConfig.colorText || '#000000'} onChange={(e) => updateDesignConfigDB('colorText', e.target.value)} className="absolute -top-4 -left-4 w-24 h-24 cursor-pointer" />
@@ -339,7 +314,7 @@ export default function DesignSettings() {
              </div>
            )}
 
-           {/* 5. BUTTONS (Shape, Style & Color) */}
+           {/* 5. BUTTONS */}
            {activeDesignTab === 'buttons' && (
              <div className="max-w-[600px] mx-auto bg-white p-10 rounded-[32px] shadow-sm border border-gray-100 animate-in slide-in-from-bottom-4 relative overflow-hidden">
                 {!isPro && (
@@ -352,12 +327,10 @@ export default function DesignSettings() {
                 )}
                 <div className={!isPro ? 'opacity-30 pointer-events-none' : ''}>
                   <h2 className="text-xl font-black mb-6 text-gray-900">Gaya & Bentuk Tombol</h2>
-                  
                   <div className="flex p-1 bg-gray-100 rounded-2xl mb-8">
                      <button onClick={() => updateDesignConfigDB('buttonStyle', 'fill')} className={`flex-1 py-2.5 font-bold text-sm rounded-xl transition-all ${designConfig.buttonStyle === 'fill' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}>Blok Warna</button>
                      <button onClick={() => updateDesignConfigDB('buttonStyle', 'outline')} className={`flex-1 py-2.5 font-bold text-sm rounded-xl transition-all ${designConfig.buttonStyle === 'outline' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}>Garis Tepi</button>
                   </div>
-
                   <div className="grid grid-cols-3 gap-6 mb-10">
                      {['none', 'xl', 'full'].map((shape) => {
                         const isOutline = designConfig.buttonStyle === 'outline';
@@ -372,12 +345,10 @@ export default function DesignSettings() {
                         )
                      })}
                   </div>
-
                   <div className="flex justify-between items-center mb-6 pt-8 border-t border-gray-100">
                     <h2 className="text-xl font-black text-gray-900">Ubah Warna Tombol</h2>
                     {designConfig.colorBtn && <button onClick={() => updateDesignConfigDB('colorBtn', '')} className="text-xs font-bold text-red-500 flex items-center gap-1 hover:underline"><RefreshCw size={12}/> Reset</button>}
                   </div>
-
                   <div className="flex items-center gap-4">
                     <div className="relative w-14 h-14 rounded-full overflow-hidden border-4 border-gray-100 shadow-sm cursor-pointer hover:scale-105 transition-transform">
                       <input type="color" value={designConfig.colorBtn || '#000000'} onChange={(e) => updateDesignConfigDB('colorBtn', e.target.value)} className="absolute -top-4 -left-4 w-24 h-24 cursor-pointer" />
@@ -393,37 +364,18 @@ export default function DesignSettings() {
         </div>
       </div>
 
-      {/* ========================================== */}
-      {/* 🔥 MODAL "THEME IS TOO HOT" (LADANG CUAN) 🔥 */}
-      {/* ========================================== */}
       {showProModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowProModal(false)}></div>
-          
           <div className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl relative z-10 animate-in zoom-in-95 duration-200 overflow-hidden">
             <div className="absolute -top-10 -right-10 w-40 h-40 bg-gradient-to-br from-[#7949F6] to-[#d2e823] rounded-full blur-3xl opacity-30"></div>
-            
-            <button onClick={() => setShowProModal(false)} className="absolute top-4 right-4 p-2 bg-gray-50 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-900 transition-colors z-20">
-              <X size={16}/>
-            </button>
-
+            <button onClick={() => setShowProModal(false)} className="absolute top-4 right-4 p-2 bg-gray-50 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-900 transition-colors z-20"><X size={16}/></button>
             <div className="relative z-10 flex flex-col items-center text-center mt-4">
-              <div className="w-20 h-20 bg-gradient-to-tr from-[#7949F6] to-[#d2e823] rounded-3xl flex items-center justify-center mb-6 shadow-xl transform -rotate-6">
-                <Crown size={36} className="text-white" />
-              </div>
-              
+              <div className="w-20 h-20 bg-gradient-to-tr from-[#7949F6] to-[#d2e823] rounded-3xl flex items-center justify-center mb-6 shadow-xl transform -rotate-6"><Crown size={36} className="text-white" /></div>
               <h3 className="text-2xl font-black text-gray-900 mb-2 leading-tight">Desain ini <br/>terlalu Keren! 🔥</h3>
-              <p className="text-sm font-medium text-gray-500 mb-8 px-2">
-                Upgrade ke Premium untuk membuka semua tema eksklusif, font, dan latar belakang berkelas.
-              </p>
-              
-              <Link href="/admin/pricing" onClick={() => setShowProModal(false)} className="w-full py-4 bg-black text-white rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:scale-105 hover:shadow-2xl transition-all mb-3">
-                <Zap size={16} className="text-[#d2e823]" fill="currentColor" /> UPGRADE KE PRO
-              </Link>
-              
-              <button onClick={() => setShowProModal(false)} className="text-xs font-bold text-gray-400 hover:text-gray-900 transition-colors">
-                Nanti aja deh
-              </button>
+              <p className="text-sm font-medium text-gray-500 mb-8 px-2">Upgrade ke Premium untuk membuka semua tema eksklusif, font, dan latar belakang berkelas.</p>
+              <Link href="/admin/pricing" onClick={() => setShowProModal(false)} className="w-full py-4 bg-black text-white rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:scale-105 hover:shadow-2xl transition-all mb-3"><Zap size={16} className="text-[#d2e823]" fill="currentColor" /> UPGRADE KE PRO</Link>
+              <button onClick={() => setShowProModal(false)} className="text-xs font-bold text-gray-400 hover:text-gray-900 transition-colors">Nanti aja deh</button>
             </div>
           </div>
         </div>

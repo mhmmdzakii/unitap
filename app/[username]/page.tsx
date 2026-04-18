@@ -2,12 +2,15 @@
 import { supabase } from '@/lib/supabase';
 import { notFound } from 'next/navigation';
 import { BadgeCheck, MoreVertical, Music, Video, ShoppingBag, Mail } from 'lucide-react';
-import { THEMES_DATA, ICON_MAP, BrandIcons } from '@/lib/constants'; // 🔥 INI IMPORT DARI GUDANG
+import { THEMES_DATA, ICON_MAP, BrandIcons } from '@/lib/constants'; 
+import { unstable_noStore as noStore } from 'next/cache'; // 🔥 INI OBAT ANTI VERCEL CACHE
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function PublicProfile({ params }: { params: Promise<{ username: string }> }) {
+  noStore(); // 🔥 PAKSA VERCEL BUAT SELALU AMBIL DATA TERBARU!
+  
   const resolvedParams = await params;
   const username = resolvedParams.username;
 
@@ -57,26 +60,24 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Playfair+Display:ital,wght@0,700;1,700&family=Space+Mono:wght@400;700${customFontName}&display=swap');
         `}} />
 
-        {/* BACKGROUND IMAGE (FIXED POS) */}
-       {/* GANTI BLOK BACKGROUND DI page.tsx PAKE INI 🔥 */}
-{(profile.custom_bg_url || theme.bgImage) && (
-  <>
-    <img 
-      src={profile.custom_bg_url || theme.bgImage} 
-      alt="Bg" 
-      className="fixed inset-0 w-full h-full object-cover z-0" 
-    />
-    
-    {/* 🔥 SISTEM BARU: Hanya redup kalau di constants ditulis 'redup: true' */}
-    {theme.redup === true && (
-      <div className="fixed inset-0 bg-black/40 z-[5]"></div>
-    )}
-  </>
-)}
-        {/* 🔥 CONTAINER UTAMA - DIKUNCI MAKS 480px BIAR DI PC GAK MELAR 🔥 */}
+        {/* ============================================================== */}
+        {/* 🔥 JURUS HANCURIN GAMBAR LAMA (THE REAL FIX) 🔥 */}
+        {/* ============================================================== */}
+        {activeTheme === 'custom' && profile?.custom_bg_url?.length > 5 ? (
+          <img key="custom-bg" src={profile.custom_bg_url} alt="Bg" className="fixed inset-0 w-full h-full object-cover z-0 transition-all duration-700" />
+        ) : theme?.bgImage ? (
+          <img key="theme-bg" src={theme.bgImage} alt="Bg" className="fixed inset-0 w-full h-full object-cover z-0 transition-all duration-700" />
+        ) : null}
+        
+        {/* 🔥 SISTEM BARU: Hanya redup kalau di constants ditulis 'redup: true' */}
+        {theme?.redup === true && (
+          <div className="fixed inset-0 bg-black/40 z-[5] transition-all duration-700"></div>
+        )}
+
+        {/* 🔥 CONTAINER UTAMA */}
         <div className="w-full max-w-[480px] flex flex-col items-center relative z-10 mx-auto">
           
-          {/* 🔥 AVATAR DINAMIS (INITIAL vs PIC) 🔥 */}
+          {/* 🔥 AVATAR DINAMIS */}
           <div className="w-[96px] h-[96px] shrink-0 bg-white rounded-full mb-4 flex items-center justify-center shadow-lg border-[3px] border-white/60 overflow-hidden relative">
             {profile.profile_image ? (
               <img src={profile.profile_image} alt={`@${username}`} className="w-full h-full object-cover" />
@@ -204,6 +205,7 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
               else if (cat === 'music') IconToRender = <Music size={22} strokeWidth={1.5} />;
               else if (cat === 'video') IconToRender = <Video size={22} strokeWidth={1.5} />;
               else if (cat === 'store') IconToRender = <ShoppingBag size={22} strokeWidth={1.5} />;
+              
               return (
                 <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className={`${baseClasses} ${shapeClass} py-4 px-4 flex justify-between items-center`} style={btnStyleStr}>
                    <div className="w-10 flex justify-center items-center opacity-90 z-10">
