@@ -15,32 +15,17 @@ export default function PublicLinkCard({ link, theme, designConfig, isOutline, s
 
   const btnStyleStr = designConfig.colorBtn ? (isOutline ? { borderColor: designConfig.colorBtn, color: designConfig.colorBtn, backgroundColor: 'transparent', borderWidth: '2px' } : { backgroundColor: designConfig.colorBtn, color: '#fff', borderColor: 'transparent' }) : {};
   
-  // 🔥 UPDATE: Tambahin z-[50] dan active:scale buat HP biar gak ketutup & responsif
+  // 🔥 PROTEKSI SULTAN: z-index tinggi & touch-manipulation biar responsif di HP
   const baseClasses = `relative z-[50] block w-full transition-all active:scale-[0.96] shadow-sm backdrop-blur-md cursor-pointer select-none touch-manipulation ${isOutline && !designConfig.colorBtn ? 'border-2 border-current bg-transparent' : theme.btnTheme}`;
 
   // =========================================================
-  // 🔥 MESIN SULTAN: WA ROTATOR ANTI-BADAI & ANALYTICS 🔥
+  // 🔥 FUNGSI KLIK ANTI-BLOKIR (SAT-SET DAS-DES) 🔥
   // =========================================================
-  const handleLinkClick = async (e: React.MouseEvent) => {
+  const handleLinkClick = (e: React.MouseEvent) => {
     e.preventDefault(); 
-    e.stopPropagation(); // Biar gak tembus ke element di bawahnya
+    e.stopPropagation();
 
-    // 1. Tembak Data ke Analytics
-    try {
-      const userAgent = window.navigator.userAgent.toLowerCase();
-      const device = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent) ? 'Mobile' : 'Desktop';
-      const referrer = document.referrer ? new URL(document.referrer).hostname : 'Direct / Link di Bio';
-      await supabase.from('link_analytics').insert({ 
-        link_id: link.id, 
-        user_id: profileId, 
-        device_type: device, 
-        referrer: referrer 
-      });
-    } catch (error) {
-      console.error("Analytics Error:", error);
-    }
-
-    // 2. Mesin WA Rotator (FIXED)
+    // 1. Logika Link & WA Rotator
     let finalUrl = link.url;
     let decodedUrl = decodeURIComponent(link.url || ''); 
     
@@ -49,21 +34,34 @@ export default function PublicLinkCard({ link, theme, designConfig, isOutline, s
         let cleanStr = decodedUrl.replace(/^https?:\/\//i, '');
         const numbers = cleanStr.split(',');
         const randomIndex = Math.floor(Math.random() * numbers.length);
-        
         let picked = numbers[randomIndex].trim();
         picked = picked.replace(/^wa\.me\//i, '').replace(/^api\.whatsapp\.com\/send\?phone=/i, '').replace(/\D/g, ''); 
-        
         finalUrl = `https://wa.me/${picked}`; 
       }
     }
 
-    // 3. Buka Linknya
     if (!finalUrl.startsWith('http')) finalUrl = `https://${finalUrl}`;
+
+    // 2. JURUS PAMUNGKAS: Buka Link DULUAN (Biar Gak Diblokir Browser HP)
     window.open(finalUrl, '_blank');
+
+    // 3. Simpan Analytics di Background (Gak pake await biar gak telat)
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const device = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent) ? 'Mobile' : 'Desktop';
+    const referrer = document.referrer ? new URL(document.referrer).hostname : 'Direct / Link di Bio';
+
+    supabase.from('link_analytics').insert({ 
+      link_id: link.id, 
+      user_id: profileId, 
+      device_type: device, 
+      referrer: referrer 
+    }).then(({ error }) => {
+      if (error) console.error("Database Error:", error);
+    });
   };
 
   // =========================================================
-  // 🎨 TAMPILAN KARTU LINK
+  // 🎨 TAMPILAN KARTU LINK (100% CLEAN)
   // =========================================================
   
   // 1. LAYOUT FEATURED (GAMBAR GEDE)
