@@ -243,21 +243,30 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
             )}
 
             {regularLinks.map((link) => {
+              // ==========================================
+              // 🔥 LOGIKA GAMBAR BARU (ANTI SEPATU MERAH) 🔥
+              // ==========================================
               let cat = link.type || 'standard';
-              let img = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80";
               const url = (link.url || '').toLowerCase();
               const title = link.title || 'My Link';
 
-              if (cat === 'music' || url.includes('spotify.com') || url.includes('apple.com')) {
-                cat = 'music'; img = "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&q=80";
-              } else if (cat === 'video' || url.includes('youtube.com') || url.includes('youtu.be')) {
-                cat = 'video';
-                const ytMatch = link.url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-                if (ytMatch) img = `https://img.youtube.com/vi/${ytMatch[1]}/maxresdefault.jpg`;
-              } else if (cat === 'store' || url.includes('tokopedia.com') || url.includes('shopee.co')) {
-                cat = 'store'; img = "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80";
-              }
+              // 1. Prioritaskan gambar yang diupload user dari database! (JANGAN DITIMPA)
+              let img = link.image_url || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80";
 
+              if (cat === 'music' || url.includes('spotify.com') || url.includes('apple.com')) { 
+                cat = 'music'; 
+                if (!link.image_url) img = "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&q=80"; 
+              } 
+              else if (cat === 'video' || url.includes('youtube.com') || url.includes('youtu.be')) { 
+                cat = 'video'; 
+                const ytMatch = link.url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/); 
+                if (ytMatch && !link.image_url) img = `https://img.youtube.com/vi/${ytMatch[1]}/maxresdefault.jpg`; 
+              } 
+              else if (cat === 'store' || url.includes('tokopedia.com') || url.includes('shopee.co')) { 
+                cat = 'store'; 
+                // Kalau user gak upload foto, pake gambar Tas Belanja Estetik (Bukan Sepatu Nike!)
+                if (!link.image_url) img = "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=400&q=80"; 
+              }
               const isFeatured = link.layout === 'featured';
               const isMinimal = link.layout === 'minimal';
               
