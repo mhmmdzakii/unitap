@@ -22,7 +22,7 @@ export default function Sidebar({ isMobileView = false }: { isMobileView?: boole
   // 🔥 LADANG CUAN: Monetize Section
   const monetizeNav = [
     { id: 'tips', name: 'Tip Jar', icon: Heart, path: '/admin/tips', pro: false }, 
-    { id: 'store', name: 'Etalase', icon: ShoppingBag, path: '/admin/store', pro: true },
+    { id: 'store', name: 'Etalase', icon: ShoppingBag, path: '/admin/etalase', pro: true },
     { id: 'verified', name: 'Verified Badge', icon: BadgeCheck, path: '/admin/verified', pro: true },
   ];
 

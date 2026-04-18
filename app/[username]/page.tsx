@@ -1,12 +1,47 @@
 // app/[username]/page.tsx
 import { supabase } from '@/lib/supabase';
 import { notFound } from 'next/navigation';
+import { Metadata } from 'next';
+import Script from 'next/script';
 import { BadgeCheck, MoreVertical, Music, Video, ShoppingBag, Mail } from 'lucide-react';
 import { THEMES_DATA, ICON_MAP, BrandIcons } from '@/lib/constants'; 
 import { unstable_noStore as noStore } from 'next/cache'; // 🔥 INI OBAT ANTI VERCEL CACHE
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+
+// 🔥 JURUS SEO SAKTI: Biar Link Keliatan Pro di WA/IG 🔥
+export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
+  const { username } = await params;
+
+  // Ambil data buat preview
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('username, bio, profile_image')
+    .eq('username', username)
+    .single();
+
+  const title = profile ? `@${profile.username} | UniTap` : 'UniTap Profile';
+  const description = profile?.bio || 'Check out my UniTap profile!';
+  const image = profile?.profile_image || '/og-image.jpg'; // Gambar default kalau user gak punya foto
+
+  return {
+    title: title,
+    description: description,
+    openGraph: {
+      title: title,
+      description: description,
+      images: [image],
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: title,
+      description: description,
+      images: [image],
+    },
+  };
+}
 
 export default async function PublicProfile({ params }: { params: Promise<{ username: string }> }) {
   noStore(); // 🔥 PAKSA VERCEL BUAT SELALU AMBIL DATA TERBARU!
@@ -50,6 +85,13 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
     const customFontName = designConfig.fontFamily && !['sans', 'serif', 'mono'].includes(designConfig.fontFamily) 
       ? `&family=${designConfig.fontFamily.replace(/\s+/g, '+')}:wght@400;700` : '';
 
+    // ==============================================================
+    // 🔥 JURUS PISAH: ETALASE vs LINK BIASA 🔥
+    // ==============================================================
+    const regularLinks = links?.filter((l) => l.layout !== 'etalase') || [];
+    const etalaseLinks = links?.filter((l) => l.layout === 'etalase') || [];
+    const shapeClass = designConfig.buttonShape === 'rounded-full' ? 'rounded-full' : designConfig.buttonShape === 'rounded-none' ? 'rounded-none' : 'rounded-xl';
+
     return (
       <div 
         className={`min-h-screen w-full flex flex-col items-center py-16 px-4 sm:px-0 transition-all duration-300 relative ${theme.bgTheme}`} 
@@ -59,6 +101,21 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
         <style dangerouslySetInnerHTML={{__html: `
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Playfair+Display:ital,wght@0,700;1,700&family=Space+Mono:wght@400;700${customFontName}&display=swap');
         `}} />
+
+        {/* 🔥 MESIN PELACAK GOOGLE ANALYTICS 🔥 */}
+        {profile?.ga_id && (
+          <>
+            <Script src={`https://www.googletagmanager.com/gtag/js?id=${profile.ga_id}`} strategy="afterInteractive" />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${profile.ga_id}');
+              `}
+            </Script>
+          </>
+        )}
 
         {/* ============================================================== */}
         {/* 🔥 JURUS HANCURIN GAMBAR LAMA (THE REAL FIX) 🔥 */}
@@ -118,9 +175,74 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
              )}
           </div>
 
-          {/* LIST LINKS */}
+          {/* ========================================================= */}
+          {/* 🔥 1. GRID ETALASE (2x2) 🔥 */}
+          {/* ========================================================= */}
+          {etalaseLinks.length > 0 && (
+            <div className="w-full mb-8 px-1">
+              <h3 className={`font-black text-[15px] tracking-wide mb-4 pl-1 flex items-center gap-2 ${theme.textTheme}`} style={customTextStyle}>
+                <ShoppingBag size={18} /> Etalase Pilihan
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+               {etalaseLinks.map((product) => {
+  const btnStyleStr = designConfig.colorBtn ? (isOutline ? { borderColor: designConfig.colorBtn, color: designConfig.colorBtn, backgroundColor: 'transparent', borderWidth: '2px' } : { backgroundColor: designConfig.colorBtn, color: '#fff', borderColor: 'transparent' }) : {};
+  const etalaseShapeClass = designConfig.buttonShape === 'rounded-full' ? 'rounded-[24px]' : designConfig.buttonShape === 'rounded-none' ? 'rounded-none' : 'rounded-2xl';
+
+  return (
+    <a key={product.id} href={`/api/go?id=${product.id}`} target="_blank" rel="noopener noreferrer" className={`block w-full transition-all hover:scale-[1.02] shadow-sm backdrop-blur-md cursor-pointer overflow-hidden flex flex-col ${isOutline && !designConfig.colorBtn ? 'border-2 border-current bg-transparent' : theme.btnTheme} ${etalaseShapeClass}`} style={btnStyleStr}>
+      
+      {/* GAMBAR PRODUK + PITA PROMO */}
+      <div className="w-full aspect-square relative bg-black/5 flex items-center justify-center overflow-hidden border-b border-black/5">
+        {product.image_url ? (
+          <img src={product.image_url} alt={product.title} className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" />
+        ) : (
+          <ShoppingBag className="opacity-20" size={32}/>
+        )}
+
+        {/* 🎀 PITA PROMO (Hanya muncul kalau diisi) */}
+        {product.promo_label && (
+          <div className="absolute top-2 left-2 bg-orange-500 text-white text-[9px] font-black px-2 py-1 rounded-md shadow-lg animate-pulse uppercase tracking-tighter">
+            {product.promo_label}
+          </div>
+        )}
+      </div>
+
+      {/* DETAIL PRODUK (JUDUL + HARGA) */}
+      <div className="p-3 flex-1 flex flex-col justify-between">
+        <div>
+          <span className="font-bold text-[13px] leading-tight line-clamp-2 w-full text-left mb-2">{product.title}</span>
+          
+          {/* 💰 HARGA CORET & HARGA ASLI */}
+          <div className="flex flex-wrap items-center gap-1.5">
+             {product.price && (
+               <span className="font-black text-[14px] text-green-500 tracking-tighter">Rp{product.price}</span>
+             )}
+             {product.price_sale && (
+               <span className="text-[10px] font-bold opacity-50 line-through">Rp{product.price_sale}</span>
+             )}
+          </div>
+        </div>
+
+        <span className="text-[9px] font-black uppercase tracking-widest opacity-60 mt-3 block border-t border-black/5 pt-2">
+          Beli Sekarang →
+        </span>
+      </div>
+    </a>
+  );
+})}
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* 🔥 2. LIST LINK BIASA (MENURUN) 🔥 */}
+          {/* ========================================================= */}
           <div className="w-full flex flex-col gap-4 mb-16 px-1">
-            {links?.map((link) => {
+            {regularLinks.length > 0 && etalaseLinks.length > 0 && (
+              <h3 className={`font-black text-[15px] tracking-wide mt-2 mb-1 pl-1 ${theme.textTheme}`} style={customTextStyle}>Link Lainnya</h3>
+            )}
+
+            {regularLinks.map((link) => {
               let cat = link.type || 'standard';
               let img = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80";
               const url = (link.url || '').toLowerCase();
@@ -146,7 +268,6 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
               ) : {};
 
               const baseClasses = `block w-full transition-all hover:scale-[1.02] shadow-sm backdrop-blur-md cursor-pointer ${isOutline && !designConfig.colorBtn ? 'border-2 border-current bg-transparent' : theme.btnTheme}`;
-              const shapeClass = designConfig.buttonShape === 'rounded-full' ? 'rounded-full' : designConfig.buttonShape === 'rounded-none' ? 'rounded-none' : 'rounded-xl';
 
               if (isFeatured && cat !== 'standard') {
                 return (
