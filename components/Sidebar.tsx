@@ -4,7 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAdmin } from '@/context/AdminContext';
-import { Heart, BadgeCheck, Globe, Globe2, LineChart, Link2, Palette, QrCode, Search, ShoppingBag, Settings, Layout, Zap, Crown, BarChart2, Check, Copy, Target } from 'lucide-react';
+import { Heart, BadgeCheck, Globe, Globe2, LineChart, Link2, Palette, QrCode, Search, ShoppingBag, Settings, Layout, Zap, Crown, BarChart2, Check, Copy, Target, User } from 'lucide-react';
+
 
 // Tambahin props isMobileView biar bisa di-tweak dikit style-nya kalau lg di HP
 export default function Sidebar({ isMobileView = false }: { isMobileView?: boolean }) {
@@ -17,6 +18,7 @@ export default function Sidebar({ isMobileView = false }: { isMobileView?: boole
   const buildNav = [
     { name: 'Links', path: '/admin/links', icon: Link2 },
     { name: 'Design', path: '/admin/design', icon: Palette },
+    { name: 'Edit Profil', path: '/admin/profile', icon: User }, // 🔥 MENU BARU DISINI BOSKU!
   ];
 
   // 🔥 LADANG CUAN: Monetize Section

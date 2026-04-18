@@ -84,7 +84,7 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
           if (url.includes('spotify.com')) {
             try {
               // 🔥 API SPOTIFY YANG SUDAH DIPERBAIKI (PAKAI TANDA $ SEBELUM KURUNG KURAWAL)
-              const res = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(link.url)}`, { cache: 'no-store' });
+              const res = await fetch(`https://open.spotify.com/oembed?url=$${encodeURIComponent(link.url)}`, { cache: 'no-store' });
               if (res.ok) {
                 const data = await res.json();
                 if (data.thumbnail_url) img = data.thumbnail_url;
@@ -162,12 +162,21 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
           
           <p className={`text-[15px] mt-1 mb-6 text-center font-medium opacity-90 drop-shadow-md max-w-sm ${theme.textTheme}`} style={customTextStyle}>{profile.bio || 'Welcome to my page!'}</p>
 
+          {/* ======================================================================= */}
+          {/* 🔥 UPDATE: IKON SOSMED 100% AMAN DARI LOCALHOST & SUPPORT 6 LOGO 🔥 */}
+          {/* ======================================================================= */}
           <div className={`flex items-center justify-center gap-5 mb-8 ${theme.textTheme}`} style={customTextStyle}>
-             {profile.instagram && <a href={profile.instagram} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform"><BrandIcons.instagram /></a>}
-             {profile.tiktok && <a href={profile.tiktok} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform"><BrandIcons.tiktok /></a>}
-             {profile.x && <a href={profile.x} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform"><BrandIcons.x /></a>}
-             {profile.facebook && <a href={profile.facebook} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform"><BrandIcons.facebook /></a>}
-             {!profile.instagram && !profile.tiktok && !profile.x && !profile.facebook && (<a href={`mailto:hello@${profile.username}.com`} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform opacity-50"><Mail size={22} /></a>)}
+             {profile.instagram && <a href={`https://instagram.com/${profile.instagram.replace('@', '')}`} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform"><BrandIcons.instagram /></a>}
+             {profile.tiktok && <a href={`https://tiktok.com/@${profile.tiktok.replace('@', '')}`} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform"><BrandIcons.tiktok /></a>}
+             {profile.whatsapp_profile && <a href={`https://wa.me/${profile.whatsapp_profile.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform"><BrandIcons.whatsapp /></a>}
+             {profile.x_profile && <a href={`https://x.com/${profile.x_profile.replace('@', '')}`} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform"><BrandIcons.x /></a>}
+             {profile.facebook && <a href={`https://facebook.com/${profile.facebook}`} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform"><BrandIcons.facebook /></a>}
+             {profile.youtube && <a href={`https://youtube.com/@${profile.youtube.replace('@', '')}`} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform"><BrandIcons.youtube /></a>}
+             
+             {/* Kalo kosong semua, munculin logo email aja */}
+             {!profile.instagram && !profile.tiktok && !profile.whatsapp_profile && !profile.x_profile && !profile.facebook && !profile.youtube && (
+               <a href={`mailto:hello@${profile.username}.com`} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform opacity-50"><Mail size={22} /></a>
+             )}
           </div>
 
           {/* 🔥 GRID ETALASE 🔥 */}
@@ -178,10 +187,10 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
               </h3>
               <div className="grid grid-cols-2 gap-3">
                {etalaseLinks.map((product) => {
-                  const btnStyleStr = designConfig.colorBtn ? (isOutline ? { borderColor: designConfig.colorBtn, color: designConfig.colorBtn, backgroundColor: 'transparent', borderWidth: '2px' } : { backgroundColor: designConfig.colorBtn, color: '#fff', borderColor: 'transparent' }) : {};
-                  const etalaseShapeClass = designConfig.buttonShape === 'rounded-full' ? 'rounded-[24px]' : designConfig.buttonShape === 'rounded-none' ? 'rounded-none' : 'rounded-2xl';
+                 const btnStyleStr = designConfig.colorBtn ? (isOutline ? { borderColor: designConfig.colorBtn, color: designConfig.colorBtn, backgroundColor: 'transparent', borderWidth: '2px' } : { backgroundColor: designConfig.colorBtn, color: '#fff', borderColor: 'transparent' }) : {};
+                 const etalaseShapeClass = designConfig.buttonShape === 'rounded-full' ? 'rounded-[24px]' : designConfig.buttonShape === 'rounded-none' ? 'rounded-none' : 'rounded-2xl';
 
-                  return (
+                 return (
                     <a key={product.id} href={`/api/go?id=${product.id}`} target="_blank" rel="noopener noreferrer" className={`block w-full transition-all hover:scale-[1.02] shadow-sm backdrop-blur-md cursor-pointer overflow-hidden flex flex-col ${isOutline && !designConfig.colorBtn ? 'border-2 border-current bg-transparent' : theme.btnTheme} ${etalaseShapeClass}`} style={btnStyleStr}>
                       <div className="w-full aspect-square relative bg-black/5 flex items-center justify-center overflow-hidden border-b border-black/5">
                         {product.image_url ? (<img src={product.image_url} alt={product.title} className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" />) : (<ShoppingBag className="opacity-20" size={32}/>)}
@@ -198,8 +207,8 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
                         <span className="text-[9px] font-black uppercase tracking-widest opacity-60 mt-3 block border-t border-black/5 pt-2">Beli Sekarang →</span>
                       </div>
                     </a>
-                  );
-                })}
+                 );
+               })}
               </div>
             </div>
           )}
