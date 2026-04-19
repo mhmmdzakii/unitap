@@ -135,8 +135,9 @@ function PreviewLinkItem({ link, theme, designConfig, isOutline, shapeClass }: a
 // =========================================================================
 // WADAH HP BOONGAN UTAMA
 // =========================================================================
-export default function MobilePreview() {
-  const { profile, links, activeTheme: contextTheme, designConfig: contextDesign } = useAdmin(); // 🔥 LANGSUNG TEMBAK PUSAT OTAK
+// Tambahkan { profile: propProfile, links: propLinks }: any di dalam kurung
+export default function MobilePreview({ profile: propProfile, links: propLinks }: any) {
+  const { profile, links, activeTheme: contextTheme, designConfig: contextDesign } = useAdmin();
   const [copied, setCopied] = useState(false);
 
   const activeTheme = contextTheme || profile?.active_theme || 'light';
