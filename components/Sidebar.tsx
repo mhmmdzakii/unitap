@@ -4,8 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAdmin } from '@/context/AdminContext';
-import { Heart, BadgeCheck, Globe, Globe2, LineChart, Link2, Palette, QrCode, Search, ShoppingBag, Settings, Layout, Zap, Crown, BarChart2, Check, Copy, Target, User } from 'lucide-react';
-
+// 🔥 UPDATE IMPORT: Udah gue masukin 'Users' dan 'Star' di sini!
+import { Heart, BadgeCheck, Globe, Globe2, LineChart, Link2, Palette, QrCode, Search, ShoppingBag, Settings, Layout, Zap, Crown, BarChart2, Check, Copy, Target, User, Users, Star } from 'lucide-react';
 
 // Tambahin props isMobileView biar bisa di-tweak dikit style-nya kalau lg di HP
 export default function Sidebar({ isMobileView = false }: { isMobileView?: boolean }) {
@@ -18,7 +18,8 @@ export default function Sidebar({ isMobileView = false }: { isMobileView?: boole
   const buildNav = [
     { name: 'Links', path: '/admin/links', icon: Link2 },
     { name: 'Design', path: '/admin/design', icon: Palette },
-    { name: 'Edit Profil', path: '/admin/profile', icon: User }, // 🔥 MENU BARU DISINI BOSKU!
+    { name: 'Edit Profil', path: '/admin/profile', icon: User },
+    { name: 'Pengaturan Akun', path: '/admin/akun', icon: User },
   ];
 
   // 🔥 LADANG CUAN: Monetize Section
@@ -28,9 +29,11 @@ export default function Sidebar({ isMobileView = false }: { isMobileView?: boole
     { id: 'verified', name: 'Verified Badge', icon: BadgeCheck, path: '/admin/verified', pro: true },
   ];
 
-  // 🔥 GROWTH: Tambah Custom Domain
+  // 🔥 GROWTH & DATABASE: Tambah Testimoni dan Leads
   const growthNav = [
     { name: 'Analytics', path: '/admin/analytics', icon: BarChart2, badge: 'New' },
+    { name: 'Database Kontak', path: '/admin/leads', icon: Users, badge: 'Pro' },
+    { name: 'Testimoni', path: '/admin/reviews', icon: Star, badge: 'New' }, // 🔥 FITUR BARU!
     { name: 'Custom Domain', path: '/admin/domain', icon: Globe2, badge: 'Pro' },
     { name: 'SEO Setup', path: '/admin/seo', icon: Globe, badge: 'Pro' },
     { name: 'QR Code', path: '/admin/qrcode', icon: QrCode },
@@ -41,19 +44,15 @@ export default function Sidebar({ isMobileView = false }: { isMobileView?: boole
   const nextGoal = 100; 
   const progressPercent = Math.min((totalClicks / nextGoal) * 100, 100);
 
- // 🔥 TIMPA FUNGSI LAMA LO PAKE INI 🔥
-const handleCopy = (e: React.MouseEvent) => {
-  e.stopPropagation(); // Biar gak nutup menu hp
-  
-  // Kita ambil username, bersihin @, dan bikin huruf kecil semua biar rapi
-  const username = profile?.username?.replace('@', '').toLowerCase() || 'you';
-  
-  // 🔥 INI DIA: Kita suruh dia nyalin link Vercel asli
-  navigator.clipboard.writeText(`https://unitap-iota.vercel.app/${username}`);
-  
-  setCopied(true);
-  setTimeout(() => setCopied(false), 2000);
-};
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Biar gak nutup menu hp
+    
+    const username = profile?.username?.replace('@', '').toLowerCase() || 'you';
+    navigator.clipboard.writeText(`https://unitap-iota.vercel.app/${username}`);
+    
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const NavLink = ({ item }: { item: any }) => {
     const isActive = pathname === item.path;
@@ -101,6 +100,7 @@ const handleCopy = (e: React.MouseEvent) => {
         {monetizeNav.map((item) => <NavLink key={item.name} item={item} />)}
       </div>
 
+      {/* 🔥 GROWTH SECTION */}
       <div className="mb-6">
         <div className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-4">Growth</div>
         {growthNav.map((item) => <NavLink key={item.name} item={item} />)}

@@ -1,13 +1,14 @@
 // components/MobilePreview.tsx
 "use client";
 import { useState, useEffect } from 'react';
+import { useAdmin } from '@/context/AdminContext';
 import {
   Copy, Check, BadgeCheck, MoreVertical, Music, Video, ShoppingBag, Mail
 } from 'lucide-react';
 import { THEMES_DATA, ICON_MAP, BrandIcons } from '@/lib/constants';
 
 // =========================================================================
-// 🔥 KOMPONEN RADAR SAKTI (AUTO-FETCH THUMBNAIL SPOTIFY & YOUTUBE) 🔥
+// 🔥 KOMPONEN RADAR SAKTI (AUTO-FETCH & CUSTOM UPLOAD THUMBNAIL) 🔥
 // =========================================================================
 function PreviewLinkItem({ link, theme, designConfig, isOutline, shapeClass }: any) {
   const url = (link.url || '').toLowerCase();
@@ -17,57 +18,60 @@ function PreviewLinkItem({ link, theme, designConfig, isOutline, shapeClass }: a
   if (url.includes('youtube') || url.includes('youtu.be')) initialCat = 'video';
   if (url.includes('tokopedia') || url.includes('shopee')) initialCat = 'store';
 
-  const defaultImg = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80";
-  
-  // STATE BUAT REAL-TIME FETCHING
-  const [imgData, setImgData] = useState<string>(link.image_url || defaultImg);
+  // Kalo ada foto custom (image_url), pake itu. Kalo kosong, jadiin null biar nanti diproses bawahnya.
+  const [imgData, setImgData] = useState<string | null>(link.image_url || null);
   const [titleData, setTitleData] = useState<string>(link.title || 'My Link');
 
   useEffect(() => {
     let isMounted = true;
-    
-    // Kalau user udah capek-capek upload gambar sendiri, jangan ditimpa!
-    if (link.image_url) return;
+    setTitleData(link.title || 'My Link');
 
-    // 1. RADAR YOUTUBE (Pake Regex)
+    // 1. PRIORITAS UTAMA: Kalau ada Foto Custom (Upload Sendiri), pakai ini!
+    if (link.image_url) {
+      setImgData(link.image_url);
+      return;
+    }
+
+    // 2. RADAR YOUTUBE (Otomatis tarik thumbnail)
     if (initialCat === 'video') {
       const ytMatch = link.url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-      if (ytMatch) {
+      if (ytMatch && isMounted) {
         setImgData(`https://img.youtube.com/vi/${ytMatch[1]}/maxresdefault.jpg`);
-      } else {
-        setImgData("https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400&q=80");
+      } else if (isMounted) {
+        setImgData("https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400&q=80"); // Fallback Youtube
       }
     } 
-    // 2. RADAR SPOTIFY (Pake API oEmbed Resmi Spotify)
+    // 3. RADAR SPOTIFY (Otomatis tarik album)
     else if (initialCat === 'music') {
-      if (url.includes('spotify.com')) {
-        fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(link.url)}`)
-          .then(res => res.json())
-          .then(data => {
-            if (isMounted && data.thumbnail_url) setImgData(data.thumbnail_url);
-          })
-          .catch(() => {
-            if (isMounted) setImgData("https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&q=80");
-          });
-      } else {
-        setImgData("https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&q=80");
-      }
-    }
-    // 3. E-COMMERCE (Tas Belanja)
+      if (isMounted) setImgData("https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&q=80"); // Placeholder Music
+      
+      // Coba narik gambar aslinya lewat API Spotify (Kalo error tetep pake placeholder atas)
+      fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(link.url)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (isMounted && data.thumbnail_url) setImgData(data.thumbnail_url);
+        })
+        .catch(() => {});
+    } 
+    // 4. E-COMMERCE (Tas Belanja)
     else if (initialCat === 'store') {
-      setImgData("https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=400&q=80");
+      if (isMounted) setImgData("https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=400&q=80");
+    } 
+    // 5. LINK STANDAR (Kosongin gambar biar muncul Ikon Bawaan)
+    else {
+      if (isMounted) setImgData(null);
     }
 
     return () => { isMounted = false; };
-  }, [link.url, link.image_url, initialCat, url]);
+  }, [link.url, link.image_url, link.title, initialCat, url]);
 
   const isFeatured = link.layout === 'featured';
   const isMinimal = link.layout === 'minimal';
   const btnStyleStr = designConfig.colorBtn ? (isOutline ? { borderColor: designConfig.colorBtn, color: designConfig.colorBtn, backgroundColor: 'transparent', borderWidth: '1.5px' } : { backgroundColor: designConfig.colorBtn, color: '#fff', borderColor: 'transparent' }) : {};
-  const baseClasses = `w-full relative ${isOutline && !designConfig.colorBtn ? 'border-[1.5px] border-current bg-transparent' : theme.btnTheme}`;
+  const baseClasses = `w-full relative ${isOutline && !designConfig.colorBtn ? 'border-[1.5px] border-current bg-transparent' : theme.btnTheme || 'bg-white text-black'}`;
 
   // TAMPILAN FEATURED (GEDE)
-  if (isFeatured && initialCat !== 'standard') {
+  if (isFeatured && imgData) {
     return (
       <div className={`${baseClasses} rounded-[20px] p-2 flex flex-col gap-2`} style={btnStyleStr}>
         <div className="w-full aspect-[2/1] rounded-[12px] bg-black/5 overflow-hidden">
@@ -80,26 +84,35 @@ function PreviewLinkItem({ link, theme, designConfig, isOutline, shapeClass }: a
     );
   }
 
-  // TAMPILAN CLASSIC (KOTAK KECIL DI KIRI)
-  if (initialCat !== 'standard' && !isMinimal) {
+  // TAMPILAN CLASSIC BERGAMBAR (KOTAK KECIL DI KIRI)
+  // Berlaku untuk SEMUA LINK selama dia punya imgData (foto custom / foto otomatis)
+  if (!isMinimal && imgData) {
     return (
       <div className={`${baseClasses} ${shapeClass} p-1.5 flex justify-between items-center`} style={btnStyleStr}>
         <div className="w-[40px] h-[40px] rounded-[10px] bg-black/5 overflow-hidden shrink-0">
           <img src={imgData} className="w-full h-full object-cover" alt="Thumb" />
         </div>
-        <div className="flex-1 px-2 text-center overflow-hidden">
-           <span className="font-bold text-[12px] truncate block">{titleData}</span>
-           <span className="text-[10px] opacity-70 capitalize">{initialCat}</span>
+        <div className="flex-1 px-3 text-left overflow-hidden">
+           <span className="font-bold text-[13px] truncate block">{titleData}</span>
+           {/* Subtitle kecil di bawah judul (Spotify, Youtube, Store) */}
+           {initialCat !== 'standard' && (
+             <span className="text-[10px] opacity-70 capitalize flex items-center gap-1 mt-0.5">
+               {initialCat === 'music' && <Music size={10} />}
+               {initialCat === 'video' && <Video size={10} />}
+               {initialCat === 'store' && <ShoppingBag size={10} />}
+               {initialCat}
+             </span>
+           )}
         </div>
-        <div className="w-[40px] flex justify-center shrink-0 opacity-50"><MoreVertical size={16} /></div>
+        <div className="w-[30px] flex justify-end shrink-0 opacity-50 pr-1"><MoreVertical size={16} /></div>
       </div>
     );
   }
 
-  // TAMPILAN MINIMAL (CUMA ICON)
+  // TAMPILAN MINIMAL & POLOS (Jatuh ke sini kalau foto custom gak diupload dan bukan musik/video)
   let IconToRender = null;
   if (link.custom_icon && ICON_MAP[link.custom_icon]) { const CustomIcon = ICON_MAP[link.custom_icon]; IconToRender = <CustomIcon size={18} strokeWidth={1.5} />; }
-  else if (url.includes('spotify.com')) IconToRender = <BrandIcons.spotify />;
+  else if (url.includes('spotify.com') || url.includes('apple.com')) IconToRender = <BrandIcons.spotify />;
   else if (url.includes('youtube.com') || url.includes('youtu.be')) IconToRender = <BrandIcons.youtube />;
   else if (url.includes('tiktok.com')) IconToRender = <BrandIcons.tiktok />;
   else if (url.includes('instagram.com')) IconToRender = <BrandIcons.instagram />;
@@ -122,26 +135,27 @@ function PreviewLinkItem({ link, theme, designConfig, isOutline, shapeClass }: a
 // =========================================================================
 // WADAH HP BOONGAN UTAMA
 // =========================================================================
-export default function MobilePreview({ profile, links }: any) {
+export default function MobilePreview() {
+  const { profile, links, activeTheme: contextTheme, designConfig: contextDesign } = useAdmin(); // 🔥 LANGSUNG TEMBAK PUSAT OTAK
   const [copied, setCopied] = useState(false);
 
-  const activeTheme = profile?.active_theme || 'light';
+  const activeTheme = contextTheme || profile?.active_theme || 'light';
   const theme = THEMES_DATA[activeTheme] || THEMES_DATA.light;
 
+  // 🔥 TARIK DATA LIVE DARI DESIGN CONFIG & PROFIL
   const designConfig = {
-    fontFamily: profile?.font_family || theme.font || 'sans',
-    buttonShape: profile?.button_shape || 'rounded',
-    buttonStyle: profile?.button_style || 'fill',
-    colorBg: profile?.color_bg || '',
-    colorBtn: profile?.color_btn || '',
-    colorText: profile?.color_text || ''
+    fontFamily: contextDesign?.fontFamily || profile?.font_family || theme.font || 'sans',
+    buttonShape: contextDesign?.buttonShape || profile?.button_shape || 'rounded',
+    buttonStyle: contextDesign?.buttonStyle || profile?.button_style || 'fill',
+    colorBg: contextDesign?.colorBg || profile?.color_bg || '',
+    colorBtn: contextDesign?.colorBtn || profile?.color_btn || '',
+    colorText: contextDesign?.colorText || profile?.color_text || ''
   };
 
   const isOutline = designConfig.buttonStyle === 'outline';
   const customBgStyle = designConfig.colorBg ? { backgroundColor: designConfig.colorBg } : {};
   const customTextStyle = designConfig.colorText ? { color: designConfig.colorText } : {};
   const shapeClass = designConfig.buttonShape === 'rounded-full' ? 'rounded-[24px]' : designConfig.buttonShape === 'rounded-none' ? 'rounded-none' : 'rounded-xl';
-
   const getFontFamily = () => {
     const font = designConfig.fontFamily;
     if (font === 'serif') return { fontFamily: "'Playfair Display', serif" };
@@ -187,7 +201,7 @@ export default function MobilePreview({ profile, links }: any) {
                <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
             </div>
 
-            <div className={`w-full h-full rounded-[40px] relative overflow-hidden transition-all duration-300 flex flex-col ${theme.bgTheme}`} style={{ ...customBgStyle, ...getFontFamily() }}>
+            <div className={`w-full h-full rounded-[40px] relative overflow-hidden transition-all duration-300 flex flex-col ${theme.bgTheme || 'bg-white'}`} style={{ ...customBgStyle, ...getFontFamily() }}>
                
                {activeTheme === 'custom' && profile?.custom_bg_url?.length > 5 ? (
                  <img key="custom-bg" src={profile.custom_bg_url} alt="Bg" className="absolute inset-0 w-full h-full object-cover z-0 transition-all duration-700" />

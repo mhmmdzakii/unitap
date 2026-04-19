@@ -1,12 +1,12 @@
 // app/admin/links/page.tsx
 "use client";
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import { supabase } from '@/lib/supabase';
 import { 
   Plus, Trash2, BarChart2, Loader2, ArrowUp, ArrowDown, Link2, 
   Music, Video, Store, Image as ImageIcon, LayoutTemplate, X,
-  Globe, Mail, MessageCircle, Camera, Gamepad2, Briefcase, Utensils, Plane, Coffee, Heart, Star, Book, Sparkles
+  Globe, Mail, MessageCircle, Camera, Gamepad2, Briefcase, Utensils, Plane, Coffee, Heart, Star, Book, Sparkles, Lock
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -19,9 +19,28 @@ export default function LinksPage() {
   const [newType, setNewType] = useState('standard');
   const [isSaving, setIsSaving] = useState(false);
 
+  // 🔥 STATE UNTUK PLAN TYPE & UPLOAD FOTO
+  const [planType, setPlanType] = useState('free');
+  const fileInputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({});
+
   // 🔥 STATE UNTUK MODAL LAYOUT & THUMBNAIL
   const [activeLayoutModal, setActiveLayoutModal] = useState<number | null>(null);
   const [activeThumbnailModal, setActiveThumbnailModal] = useState<number | null>(null);
+
+  useEffect(() => {
+    // Cek status plan_type saat halaman dimuat
+    const checkUserPlan = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from('profiles').select('plan_type').eq('id', user.id).single();
+        if (data) setPlanType(data.plan_type || 'free');
+      }
+    };
+    checkUserPlan();
+  }, []);
+
+  // Variabel penentu apakah user berhak pakai fitur premium (Pro / Premium)
+  const isPremiumUser = planType === 'pro' || planType === 'premium';
 
   // Kamus Ikon buat Modal Thumbnail
   const ICON_OPTIONS = [
@@ -38,19 +57,12 @@ export default function LinksPage() {
     { id: 'store', label: 'Store', icon: Store },
   ];
 
-  // ==========================================
-  // 🔥 OTAK WEB PINTAR: Auto-Hapus HTTPS & Auto-Detect Kategori!
-  // ==========================================
   const handleSmartInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value;
-    
-    // 1. Bersihkan HTTPS
     const cleanUrl = val.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
     setNewUrl(cleanUrl);
 
-    // 2. Detektif URL (Auto-Switch Kategori Tab)
     const lowerUrl = cleanUrl.toLowerCase();
-    
     if (lowerUrl.includes('spotify.com') || lowerUrl.includes('apple.com/music') || lowerUrl.includes('soundcloud.com')) {
       setNewType('music');
     } 
@@ -117,7 +129,6 @@ export default function LinksPage() {
     ), { duration: 5000 });
   };
 
-  // 🔥 Fungsi Update Field Link Langsung (Layout / Icon)
   const handleUpdateLinkField = async (id: number, field: string, value: string | null) => {
     const toastId = toast.loading('Saving changes...');
     try {
@@ -130,9 +141,50 @@ export default function LinksPage() {
     }
   };
 
+  const handleUploadCustomPhoto = async (id: number, file: File) => {
+    if (!isPremiumUser) {
+      toast.error('Fitur Premium! Upgrade ke Pro untuk membuka fitur ini.');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Ukuran maksimal gambar 2MB');
+      return;
+    }
+
+    const toastId = toast.loading('Mengunggah gambar...');
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user?.id}-link-${id}-${Date.now()}.${fileExt}`;
+      const filePath = `links/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      const imageUrl = publicUrlData.publicUrl;
+
+      await updateLinkDB(id, 'image_url', imageUrl);
+      toast.success('Foto custom berhasil diperbarui!', { id: toastId });
+    } catch (error: any) {
+      toast.error('Gagal mengunggah gambar', { id: toastId });
+      console.error(error);
+    }
+  };
+
+  const handleRemoveCustomPhoto = async (id: number) => {
+    const toastId = toast.loading('Menghapus foto...');
+    try {
+      await updateLinkDB(id, 'image_url', null);
+      toast.success('Foto custom dihapus', { id: toastId });
+    } catch (error) {
+      toast.error('Gagal menghapus foto', { id: toastId });
+    }
+  };
+
   return (
     <>
-      <div className="max-w-3xl w-full mx-auto pb-20 animate-in fade-in duration-500 relative z-10 p-6 lg:p-10">
+      <div className="max-w-3xl w-full mx-auto pb-20 animate-in fade-in duration-500 relative z-10 p-4 sm:p-6 lg:p-10">
         
         {!isAdding && (
           <button onClick={() => setIsAdding(true)} className="w-full bg-[#7949F6] text-white py-4 rounded-full font-bold shadow-[0_8px_24px_rgba(121,73,246,0.25)] hover:bg-[#683cd4] hover:-translate-y-1 transition-all flex items-center justify-center gap-2 mb-8">
@@ -177,20 +229,20 @@ export default function LinksPage() {
           )}
 
           {links.sort((a: any, b: any) => (a.position || 0) - (b.position || 0)).map((link: any, index: number) => (
-            <div key={link.id} className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all group flex flex-col gap-4">
+            <div key={link.id} className="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all group flex flex-col gap-4">
               
-              <div className="flex items-start gap-4">
-                <div className="flex flex-col items-center justify-center text-gray-300 gap-1 w-6 mt-1">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="flex flex-col items-center justify-center text-gray-300 gap-1 w-6 mt-1 shrink-0">
                    <button onClick={() => moveLink(index, 'up')} disabled={index === 0} className="hover:text-black hover:bg-gray-100 rounded p-0.5 transition-colors disabled:opacity-30"><ArrowUp size={14} /></button>
                    <button onClick={() => moveLink(index, 'down')} disabled={index === links.length - 1} className="hover:text-black hover:bg-gray-100 rounded p-0.5 transition-colors disabled:opacity-30"><ArrowDown size={14} /></button>
                 </div>
 
-                <div className="flex-1 flex flex-col justify-center">
-                  <input type="text" value={link.title} onChange={(e) => updateLinkDB(link.id, 'title', e.target.value)} className="font-bold text-[15px] text-gray-900 outline-none w-full bg-transparent hover:bg-gray-50 focus:bg-gray-50 rounded px-1 -ml-1 transition-colors" />
+                <div className="flex-1 flex flex-col justify-center min-w-0">
+                  <input type="text" value={link.title} onChange={(e) => updateLinkDB(link.id, 'title', e.target.value)} className="font-bold text-[15px] text-gray-900 outline-none w-full bg-transparent hover:bg-gray-50 focus:bg-gray-50 rounded px-1 -ml-1 transition-colors truncate" />
                   <input type="text" value={link.url} onChange={(e) => updateLinkDB(link.id, 'url', e.target.value)} className="text-[13px] font-medium text-gray-500 outline-none w-full bg-transparent hover:bg-gray-50 focus:bg-gray-50 rounded px-1 -ml-1 mt-0.5 transition-colors truncate" />
                 </div>
                 
-                <div className="flex items-center mt-2">
+                <div className="flex items-center mt-2 shrink-0">
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" className="sr-only peer" checked={link.isActive} onChange={(e) => updateLinkDB(link.id, 'isActive', e.target.checked)} />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#39E09B]"></div>
@@ -198,35 +250,88 @@ export default function LinksPage() {
                 </div>
               </div>
 
-              {/* 🔥 TOMBOL THUMBNAIL & LAYOUT NYA DISINI */}
-              <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                 <div className="flex items-center gap-2">
-                   <button onClick={() => setActiveThumbnailModal(link.id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${link.custom_icon ? 'bg-[#7949F6]/10 text-[#7949F6]' : 'bg-gray-50 hover:bg-gray-100 text-gray-600'}`}>
-                     <ImageIcon size={14} /> Thumbnail
-                   </button>
-                   <button onClick={() => setActiveLayoutModal(link.id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors hidden sm:flex ${link.layout && link.layout !== 'classic' ? 'bg-[#7949F6]/10 text-[#7949F6]' : 'bg-gray-50 hover:bg-gray-100 text-gray-600'}`}>
-                     <LayoutTemplate size={14} /> Layout {link.layout && link.layout !== 'classic' ? `(${link.layout})` : ''}
-                   </button>
-                 </div>
-
-                 <div className="flex items-center gap-2">
-                   <div className="px-3 py-1.5 bg-gray-50 rounded-lg flex items-center gap-1.5 text-gray-500" title="Total Clicks">
-                     <BarChart2 size={14} /> <span className="text-xs font-bold">{link.clicks || 0}</span>
+              {/* BARIS TINDAKAN BAWAH */}
+              <div className="flex flex-col gap-3 pt-3 border-t border-gray-100">
+                
+                <div className="flex items-center justify-between">
+                   <div className="flex flex-wrap items-center gap-2">
+                     <button onClick={() => setActiveThumbnailModal(link.id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${link.custom_icon ? 'bg-[#7949F6]/10 text-[#7949F6]' : 'bg-gray-50 hover:bg-gray-100 text-gray-600'}`}>
+                       <ImageIcon size={14} /> Thumbnail
+                     </button>
+                     <button onClick={() => setActiveLayoutModal(link.id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${link.layout && link.layout !== 'classic' ? 'bg-[#7949F6]/10 text-[#7949F6]' : 'bg-gray-50 hover:bg-gray-100 text-gray-600'}`}>
+                       <LayoutTemplate size={14} /> Layout {link.layout && link.layout !== 'classic' ? `(${link.layout})` : ''}
+                     </button>
                    </div>
-                   <button onClick={() => handleDelete(link.id)} className="px-3 py-1.5 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
-                     <Trash2 size={16} />
-                   </button>
-                 </div>
-              </div>
 
+                   <div className="flex items-center gap-2 shrink-0">
+                     <div className="px-3 py-1.5 bg-gray-50 rounded-lg flex items-center gap-1.5 text-gray-500" title="Total Clicks">
+                       <BarChart2 size={14} /> <span className="text-xs font-bold">{link.clicks || 0}</span>
+                     </div>
+                     <button onClick={() => handleDelete(link.id)} className="px-3 py-1.5 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                       <Trash2 size={16} />
+                     </button>
+                   </div>
+                </div>
+
+                {/* 2. PREMIUM: UPLOAD FOTO CUSTOM */}
+                <div className="flex items-center gap-4 bg-gray-50/50 p-2 rounded-xl border border-gray-100">
+                  <div className="w-10 h-10 rounded-md border border-gray-200 bg-white flex items-center justify-center overflow-hidden shrink-0">
+                    {link.image_url ? (
+                      <img src={link.image_url} alt="Custom" className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageIcon className="text-gray-300" size={16} />
+                    )}
+                  </div>
+                  
+                  <div className="flex-1 flex flex-col items-start">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Custom Photo</span>
+                      {!isPremiumUser && <span className="bg-gray-900 text-white text-[8px] px-1.5 py-0.5 rounded uppercase font-black tracking-widest flex items-center gap-1"><Lock size={8} /> Pro</span>}
+                    </div>
+                    
+                    <div className="flex gap-2 w-full">
+                      <button
+                        onClick={() => {
+                          if (!isPremiumUser) {
+                            toast.error('Fitur Premium! Ubah status akun Anda (Pro/Premium) untuk mengaktifkan fitur ini.');
+                            return;
+                          }
+                          fileInputRefs.current[link.id]?.click();
+                        }}
+                        className={`text-[10px] font-bold py-1 px-3 rounded flex items-center gap-1.5 transition-all ${isPremiumUser ? 'bg-black text-white hover:bg-gray-800' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                      >
+                        <Camera size={12} /> Upload Image
+                      </button>
+                      
+                      {link.image_url && isPremiumUser && (
+                        <button onClick={() => handleRemoveCustomPhoto(link.id)} className="text-[10px] font-bold py-1 px-3 rounded bg-red-50 text-red-500 hover:bg-red-100 transition-all">
+                          Remove
+                        </button>
+                      )}
+                    </div>
+
+                    <input
+                      type="file"
+                      ref={el => { fileInputRefs.current[link.id] = el; }}
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          handleUploadCustomPhoto(link.id, e.target.files[0]);
+                          e.target.value = '';
+                        }
+                      }}
+                      accept="image/jpeg,image/png"
+                      className="hidden"
+                    />
+                  </div>
+                </div>
+
+              </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* ========================================== */}
-      {/* 🔥 MODAL LAYOUT */}
-      {/* ========================================== */}
+      {/* MODAL LAYOUT */}
       {activeLayoutModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
@@ -253,11 +358,7 @@ export default function LinksPage() {
         </div>
       )}
 
-      
-
-      {/* ========================================== */}
-      {/* 🔥 MODAL THUMBNAIL / ICON */}
-      {/* ========================================== */}
+      {/* MODAL THUMBNAIL */}
       {activeThumbnailModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
@@ -289,4 +390,4 @@ export default function LinksPage() {
       )}
     </>
   );
-} 
+}

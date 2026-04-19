@@ -7,16 +7,23 @@ import { BadgeCheck, ShoppingBag, Mail } from 'lucide-react';
 import { THEMES_DATA, BrandIcons } from '@/lib/constants'; 
 import { unstable_noStore as noStore } from 'next/cache'; 
 import PublicLinkCard from '@/components/PublicLinkCard'; 
+import PremiumHeader from '@/components/PremiumHeader'; // 🔥 BUG IMPORT UDAH DIBENERIN
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const { username } = await params;
-  const { data: profile } = await supabase.from('profiles').select('username, bio, profile_image').eq('username', username).single();
-  const title = profile ? `@${profile.username} | UniTap` : 'UniTap Profile';
-  const description = profile?.bio || 'Check out my UniTap profile!';
-  const image = profile?.profile_image || '/og-image.jpg'; 
+  
+  // 🔥 SEKARANG KITA TARIK JUGA DATA SEO_TITLE, SEO_DESC, SEO_IMAGE
+  const { data: profile } = await supabase.from('profiles')
+    .select('username, bio, profile_image, seo_title, seo_desc, seo_image')
+    .eq('username', username).single();
+  
+  // 🔥 LOGIKA SULTAN: Kalo SEO diisi, pake SEO. Kalo kosong, pake default profil!
+  const title = profile?.seo_title || (profile ? `@${profile.username} | UniTap` : 'UniTap Profile');
+  const description = profile?.seo_desc || profile?.bio || 'Check out my UniTap profile!';
+  const image = profile?.seo_image || profile?.profile_image || '/og-image.jpg'; 
 
   return {
     title: title,
@@ -70,55 +77,60 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
     const shapeClass = designConfig.buttonShape === 'rounded-full' ? 'rounded-full' : designConfig.buttonShape === 'rounded-none' ? 'rounded-none' : 'rounded-xl';
 
     // =========================================================================================
-    // 🔥 JURUS DEWA: FETCHING SPOTIFY & YOUTUBE DI SERVER DENGAN URL YANG BENAR 🔥
+    // 🔥 JURUS DEWA: STORE AUTO-POLOS, MUSIC & VIDEO TETAP TARIK GAMBAR ASLI 🔥
     // =========================================================================================
     const regularLinks = await Promise.all(regularLinksRaw.map(async (link) => {
-      let cat = link.type || 'standard';
-      const url = (link.url || '').toLowerCase();
-      let img = link.image_url || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80";
+      let cat = link.type || 'standard'; 
+      let originalUrl = link.url || '';
+      let trueDestinationUrl = originalUrl;
 
-      // 1. SPOTIFY / APPLE MUSIC
-      if (cat === 'music' || url.includes('spotify') || url.includes('apple')) { 
-        cat = 'music'; 
-        if (!link.image_url) {
-          if (url.includes('spotify.com')) {
-            try {
-              // 🔥 API SPOTIFY YANG SUDAH DIPERBAIKI (PAKAI TANDA $ SEBELUM KURUNG KURAWAL)
-              const res = await fetch(`https://open.spotify.com/oembed?url=$${encodeURIComponent(link.url)}`, { cache: 'no-store' });
-              if (res.ok) {
-                const data = await res.json();
-                if (data.thumbnail_url) img = data.thumbnail_url;
-                else img = "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&q=80";
-              }
-            } catch (e) {
-              img = "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&q=80";
-            }
-          } else {
-             img = "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400&q=80"; 
-          }
+      // Bersihkan proxy googleusercontent
+      if (originalUrl.includes('googleusercontent.com')) {
+        const parts = originalUrl.split('/http');
+        if (parts.length > 1) {
+          trueDestinationUrl = decodeURIComponent('http' + parts[1]);
         }
-      } 
-      // 2. YOUTUBE
-      else if (cat === 'video' || url.includes('youtube') || url.includes('youtu.be')) { 
-        cat = 'video'; 
-        const ytMatch = link.url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-        if (ytMatch && !link.image_url) {
-          img = `https://img.youtube.com/vi/${ytMatch[1]}/maxresdefault.jpg`; 
-        } else if (!link.image_url) {
-          img = "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400&q=80";
-        }
-      } 
-      // 3. TOKO ONLINE
-      else if (cat === 'store' || url.includes('tokopedia') || url.includes('shopee')) { 
-        cat = 'store'; 
-        if (!link.image_url) img = "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=400&q=80"; 
       }
 
-      return { ...link, processedCat: cat, processedImg: img };
+      let img = link.image_url || null; // 🔥 Mulai dengan KOSONG (null)
+
+      // 1. STORE: AUTO-POLOS (Sesuai titah CEO!)
+      if (cat === 'store') {
+        // Nggak usah ngapa-ngapain. Biarin aja img tetep null. 
+        // Nanti PublicLinkCard.tsx bakal nampilin versi POLOS/ICON doang.
+      }
+      // 2. MUSIC: Spotify
+      else if (cat === 'music' || (cat === 'standard' && (trueDestinationUrl.includes('spotify') || trueDestinationUrl.includes('apple.com')))) {
+        cat = 'music'; 
+        if (!img && trueDestinationUrl.includes('spotify')) {
+          try {
+            const res = await fetch(`https://open.spotify.com/oembed?url=$$${encodeURIComponent(trueDestinationUrl)}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.thumbnail_url) img = data.thumbnail_url;
+            }
+          } catch (e) {}
+        }
+      } 
+      // 3. VIDEO: YouTube
+      else if (cat === 'video' || (cat === 'standard' && (trueDestinationUrl.includes('youtube.com') || trueDestinationUrl.includes('youtu.be')))) {
+        cat = 'video'; 
+        const ytMatch = trueDestinationUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+        if (ytMatch && !img) {
+          img = `https://img.youtube.com/vi/${ytMatch[1]}/maxresdefault.jpg`; 
+        }
+      }
+
+      return { 
+        ...link, 
+        processedCat: cat, 
+        processedImg: img, 
+        url: trueDestinationUrl
+      };
     }));
 
     return (
-      <div className={`min-h-screen w-full flex flex-col items-center py-16 px-4 sm:px-0 transition-all duration-300 relative ${theme.bgTheme}`} style={{ ...customBgStyle, ...getFontFamily() }}>
+      <div className={`min-h-screen w-full flex flex-col items-center py-6 px-4 sm:px-0 transition-all duration-300 relative ${theme.bgTheme}`} style={{ ...customBgStyle, ...getFontFamily() }}>
         <style dangerouslySetInnerHTML={{__html: `
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Playfair+Display:ital,wght@0,700;1,700&family=Space+Mono:wght@400;700${customFontName}&display=swap');
         `}} />
@@ -145,7 +157,16 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
 
         <div className="w-full max-w-[480px] flex flex-col items-center relative z-10 mx-auto">
           
-          <div className="w-[96px] h-[96px] shrink-0 bg-white rounded-full mb-4 flex items-center justify-center shadow-lg border-[3px] border-white/60 overflow-hidden relative">
+          {/* 🔥 LOGIKA GEMBOK PREMIUM: Cuma muncul kalo is_premium = true 🔥 */}
+          {profile.is_premium && (
+            <PremiumHeader 
+              profileImage={profile.profile_image} 
+              username={profile.username} 
+              customStyle={customTextStyle} 
+            />
+          )}
+
+          <div className="w-[96px] h-[96px] shrink-0 bg-white rounded-full mb-4 flex items-center justify-center shadow-lg border-[3px] border-white/60 overflow-hidden relative mt-2">
             {profile.profile_image ? (
               <img src={profile.profile_image} alt={`@${username}`} className="w-full h-full object-cover" />
             ) : (
@@ -161,10 +182,8 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
           </div>
           
           <p className={`text-[15px] mt-1 mb-6 text-center font-medium opacity-90 drop-shadow-md max-w-sm ${theme.textTheme}`} style={customTextStyle}>{profile.bio || 'Welcome to my page!'}</p>
+          
 
-          {/* ======================================================================= */}
-          {/* 🔥 UPDATE: IKON SOSMED 100% AMAN DARI LOCALHOST & SUPPORT 6 LOGO 🔥 */}
-          {/* ======================================================================= */}
           <div className={`flex items-center justify-center gap-5 mb-8 ${theme.textTheme}`} style={customTextStyle}>
              {profile.instagram && <a href={`https://instagram.com/${profile.instagram.replace('@', '')}`} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform"><BrandIcons.instagram /></a>}
              {profile.tiktok && <a href={`https://tiktok.com/@${profile.tiktok.replace('@', '')}`} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform"><BrandIcons.tiktok /></a>}
@@ -173,7 +192,6 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
              {profile.facebook && <a href={`https://facebook.com/${profile.facebook}`} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform"><BrandIcons.facebook /></a>}
              {profile.youtube && <a href={`https://youtube.com/@${profile.youtube.replace('@', '')}`} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform"><BrandIcons.youtube /></a>}
              
-             {/* Kalo kosong semua, munculin logo email aja */}
              {!profile.instagram && !profile.tiktok && !profile.whatsapp_profile && !profile.x_profile && !profile.facebook && !profile.youtube && (
                <a href={`mailto:hello@${profile.username}.com`} target="_blank" rel="noreferrer" className="hover:scale-110 transition-transform opacity-50"><Mail size={22} /></a>
              )}
