@@ -10,22 +10,21 @@ import toast from 'react-hot-toast';
 export default function Sidebar({ isMobileView = false }: { isMobileView?: boolean }) {
   const pathname = usePathname();
   const { profile, links } = useAdmin();
-  const userPlan = profile?.plan_type || 'free'; 
+  
+  // Ambil plan dan paksa ke huruf kecil biar gak ada drama typo Pro vs pro
+  const userPlan = (profile?.plan_type || 'free').toLowerCase(); 
   const [copied, setCopied] = useState(false);
 
   // 1. Kategori Build (Semua Free)
   const buildNav = [
     { name: 'Links', path: '/admin/links', icon: Link2, requiredPlan: 'free' },
     { name: 'Design', path: '/admin/design', icon: Palette, requiredPlan: 'free' },
-    //{ name: 'Sosial MEdia', path: '/admin/profile', icon: User, requiredPlan: 'free' },
     { name: 'Pengaturan Akun', path: '/admin/akun', icon: User, requiredPlan: 'free' },
   ];
 
   // 2. Kategori Monetize (Campur)
   const monetizeNav = [
-    //{ name: 'Newsletter', icon: Mail, path: '/admin/newsletter', badge: 'New', requiredPlan: 'free' }, 
     { name: 'Etalase', icon: ShoppingBag, path: '/admin/etalase', badge: 'Premium', requiredPlan: 'premium' },
-    // 🔥 Ini khusus Premium! Pro gak bisa masuk.
     { name: 'Verified Badge', icon: BadgeCheck, path: '/admin/verified', badge: 'Pro', requiredPlan: 'pro' },
   ];
 
@@ -33,9 +32,8 @@ export default function Sidebar({ isMobileView = false }: { isMobileView?: boole
   const growthNav = [
     { name: 'Analytics', path: '/admin/analytics', icon: BarChart2, badge: 'New', requiredPlan: 'free' },
     { name: 'Database Kontak', path: '/admin/leads', icon: Users, badge: 'Premium', requiredPlan: 'premium' },
-    { name: 'Affiliate', path: '/admin/reviews', icon: Megaphone, badge: 'Premium', requiredPlan: 'premium' },
+    { name: 'Affiliate', path: '/admin/affiliate', icon: Megaphone, badge: 'Premium', requiredPlan: 'premium' },
     { name: 'Custom Domain', path: '/admin/domain', icon: Globe2, badge: 'Premium', requiredPlan: 'premium' },
-    // 🔥 SEO Setup kita jadiin Premium contohnya:
     { name: 'SEO Setup', path: '/admin/seo', icon: Globe, badge: 'Pro', requiredPlan: 'pro' },
     { name: 'QR Code', path: '/admin/qrcode', icon: QrCode, requiredPlan: 'free' },
   ];
@@ -52,27 +50,30 @@ export default function Sidebar({ isMobileView = false }: { isMobileView?: boole
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // 🔥 KOMPONEN MENU SAKTI (GEMBOK BERTINGKAT) 🔥
+  // 🔥 KOMPONEN MENU SAKTI (LOGIKA ANTI-GEMBOK BUAT PRO) 🔥
   const NavLink = ({ item }: { item: any }) => {
     const isActive = pathname === item.path;
+    const reqPlan = item.requiredPlan.toLowerCase();
     
-    // 🧠 LOGIKA KASTA:
     let isLocked = false;
     
-    // 1. Kalau fiturnya Pro, yang akunnya 'free' kegembok.
-    if (item.requiredPlan === 'pro' && userPlan === 'free') {
-      isLocked = true;
-    }
-    // 2. Kalau fiturnya Premium, yang akunnya 'free' ATAU 'pro' kegembok! (Cuma premium yg bisa)
-    if (item.requiredPlan === 'premium' && (userPlan === 'free' || userPlan === 'pro')) {
-      isLocked = true;
+    // LOGIKA MASTER:
+    // Jika user adalah 'pro', maka SEMUA pintu terbuka (isLocked tetap false)
+    if (userPlan !== 'pro') {
+      // Jika user bukan pro, cek kasta lainnya:
+      if (reqPlan === 'pro' && userPlan === 'free') {
+        isLocked = true;
+      }
+      if (reqPlan === 'premium' && userPlan !== 'premium') {
+        isLocked = true;
+      }
     }
 
     const handleClick = (e: React.MouseEvent) => {
       if (isLocked) {
-        e.preventDefault(); // Blokir biar nggak pindah
+        e.preventDefault(); 
         const planName = item.requiredPlan === 'premium' ? 'Premium' : 'Pro';
-        toast.error(`Fitur Terkunci! Upgrade ke ${planName} untuk membuka akses ini. 👑`);
+        toast.error(`Fitur Terkunci! Upgrade ke ${planName} untuk akses ini. 👑`);
       }
     };
 
@@ -88,9 +89,7 @@ export default function Sidebar({ isMobileView = false }: { isMobileView?: boole
         </div>
         
         <div className="flex items-center gap-2">
-          {/* Munculin Ikon Gembok kalo terkunci */}
           {isLocked && <Lock size={12} className="text-gray-400" />}
-          
           {item.badge && (
             <span className={`text-[9px] px-2 py-0.5 rounded-full uppercase tracking-widest font-black ${
               item.badge === 'Pro' ? 'bg-[#d2e823] text-[#254f1a]' : 
@@ -151,8 +150,8 @@ export default function Sidebar({ isMobileView = false }: { isMobileView?: boole
           {userPlan === 'pro' ? (
             <div className="p-4 bg-gradient-to-br from-[#7949F6] to-[#d2e823] rounded-2xl text-black shadow-xl relative overflow-hidden flex items-center justify-between">
               <div>
-                <div className="flex items-center gap-1.5 mb-0.5"><Crown size={14} /><span className="font-black text-[11px] uppercase tracking-widest">Pro</span></div>
-                <p className="text-[9px] font-bold text-black/70">Unlocked basic features</p>
+                <div className="flex items-center gap-1.5 mb-0.5"><Crown size={14} /><span className="font-black text-[11px] uppercase tracking-widest">Pro Sultan</span></div>
+                <p className="text-[9px] font-bold text-black/70">Master Key Active - All Unlocked</p>
               </div>
               <Crown size={32} className="opacity-20 transform rotate-12 -mr-2" />
             </div>
@@ -160,7 +159,7 @@ export default function Sidebar({ isMobileView = false }: { isMobileView?: boole
             <div className="p-4 bg-gradient-to-br from-purple-500 to-[#7949F6] rounded-2xl text-white shadow-xl relative overflow-hidden flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-1.5 mb-0.5"><BadgeCheck size={14} /><span className="font-black text-[11px] uppercase tracking-widest">Premium</span></div>
-                <p className="text-[9px] font-bold text-white/70">Verified & All Unlocked</p>
+                <p className="text-[9px] font-bold text-white/70">Verified & Aesthetic Mode</p>
               </div>
               <BadgeCheck size={32} className="opacity-20 transform rotate-12 -mr-2" />
             </div>
