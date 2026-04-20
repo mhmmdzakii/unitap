@@ -9,67 +9,33 @@ export const THEMES_DATA: Record<string, any> = {
   custom: { id: 'custom', name: 'Custom', bgTheme: 'bg-gray-100', textTheme: 'text-gray-900', btnTheme: 'bg-white text-black shadow-sm' },
   light: { id: 'light', name: 'Minimal Light', bgTheme: 'bg-white', textTheme: 'text-gray-900', btnTheme: 'bg-[#F6F7F5] text-black border border-gray-200 hover:bg-gray-100' },
   dark: { id: 'dark', name: 'Minimal Dark', bgTheme: 'bg-[#111111]', textTheme: 'text-white', btnTheme: 'bg-[#222222] text-white hover:bg-[#333333]' },
-  ocean: { id: 'ocean', name: 'Ocean Blue', bgTheme: 'bg-gradient-to-b from-blue-50 to-blue-100', textTheme: 'text-blue-900', btnTheme: 'bg-white text-blue-900 shadow-sm hover:shadow-md' },
-  matcha: { id: 'matcha', name: 'Matcha Green', bgTheme: 'bg-[#E8F5E9]', textTheme: 'text-[#1B5E20]', btnTheme: 'bg-white text-[#2E7D32] shadow-sm hover:shadow-md' },
-  glass: { id: 'glass', name: 'Glassmorphism', bgTheme: 'bg-gradient-to-br from-purple-500 to-pink-500', textTheme: 'text-white drop-shadow-md', btnTheme: 'bg-white/20 border border-white/30 text-white backdrop-blur-md shadow-lg hover:bg-white/30' },
-  cyber: { id: 'cyber', name: 'Cyberpunk', bgTheme: 'bg-black', textTheme: 'text-[#00ff9f] drop-shadow-[0_0_8px_rgba(0,255,159,0.8)]', btnTheme: 'bg-transparent border border-[#00ff9f] text-[#00ff9f] shadow-[0_0_10px_rgba(0,255,159,0.3)] hover:bg-[#00ff9f] hover:text-black' },
-  synthwave: {
-    id: 'synthwave',
-    name: 'Retro Synthwave',
-    bgTheme: 'bg-gradient-to-br from-indigo-900 via-purple-900 to-fuchsia-900',
-    textTheme: 'text-fuchsia-200 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]',
-    btnTheme: 'bg-fuchsia-600/20 border border-fuchsia-500 text-fuchsia-100 shadow-[0_0_15px_rgba(217,70,239,0.4)] hover:bg-fuchsia-500 hover:text-white backdrop-blur-sm'
-  },
-  sultan: {
-    id: 'sultan',
-    name: 'Royal Gold',
-    bgTheme: 'bg-[#0a0a0a]',
-    textTheme: 'text-[#d4af37] drop-shadow-[0_1px_2px_rgba(212,175,55,0.3)]',
-    btnTheme: 'bg-[#141414] border border-[#d4af37]/50 text-[#d4af37] shadow-[0_4px_14px_0_rgba(212,175,55,0.15)] hover:bg-[#d4af37] hover:text-black hover:border-transparent'
-  },
-  Ijo: {
-    id: 'matcha',
-    name: 'Matcha Latte',
-    bgTheme: 'bg-[#F4F1DE]',
-    textTheme: 'text-[#3D4035]',
-    btnTheme: 'bg-[#81B29A] border border-transparent text-white shadow-md hover:bg-[#3D4035] hover:shadow-lg transition-transform hover:-translate-y-1'
-  },
-  Anjay: {
-    id: 'glass',
-    name: 'Holo Glass',
-    bgTheme: 'bg-gradient-to-tr from-pink-300 via-purple-300 to-indigo-400',
-    textTheme: 'text-white drop-shadow-md',
-    btnTheme: 'bg-white/20 backdrop-blur-md border border-white/40 text-white shadow-[0_8px_32px_0_rgba(31,38,135,0.15)] hover:bg-white hover:text-purple-600'
-  },
-  brutal: {
-    id: 'brutal',
-    name: 'Neo Brutalism',
-    bgTheme: 'bg-[#DFD9D6]',
-    textTheme: 'text-black font-black uppercase tracking-tight',
-    btnTheme: 'bg-[#FF4500] border-4 border-black text-white font-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[4px] hover:translate-x-[4px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all'
-  },
-  luxury: { id: 'luxury', name: 'Luxury Gold', bgTheme: 'bg-[#1a1a1a]', textTheme: 'text-[#D4AF37]', btnTheme: 'bg-gradient-to-r from-[#BF953F] via-[#FCF6BA] to-[#B38728] text-black shadow-lg font-extrabold hover:scale-[1.02]' },
-  retro_cafe: { id: 'retro_cafe', name: 'Retro Cafe', bgTheme: 'bg-[#4A3B32]', textTheme: 'text-white drop-shadow-lg', btnTheme: 'bg-[#FDF6E3]/80 text-[#4A3B32] backdrop-blur-md border border-white/50 shadow-xl hover:bg-[#FDF6E3]' },
-  apa: { id: 'apa', name: 'Orange Ahay', bgTheme: 'bg-[#3E2F26]', bgImage: '/apa.png', textTheme: 'text-[#F5E6CA]', btnTheme: 'bg-[#E6D3A3] text-[#3E2F26] border-2 border-[#3E2F26] shadow-[4px_4px_0px_#3E2F26] rounded-xl hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_#3E2F26]' },
-  uni: { id: 'uni', name: 'uni 90s', bgTheme: 'bg-[#efe6d8]',  bgImage: '/uni.gif', textTheme: 'text-pink-500 drop-shadow-lg', btnTheme: 'bg-pink-500/80 hover:bg-pink-600 text-white border border-pink-300' },
-Cii: { 
-  id: 'Cii', 
-  name: 'Vintage Editorial', 
-  bgTheme: 'bg-[#e9e1d4]', 
-  bgImage: '/abu.gif', 
-  // Nggak usah tulis 'redup' apa-apa, otomatis gambarnya ASLI & CERAH!
-  textTheme: 'text-[#c2410c] drop-shadow-sm', 
-  btnTheme: 'bg-[#c2410c]/90 hover:bg-[#9a3412] text-white border border-[#c2410c]' 
-},
-  vintage_diary: { 
-    id: 'vintage_diary', 
-    name: 'Vintage Diary', 
-    bgTheme: 'bg-[#F4F1EA]', 
-    bgImage: '/retro_cafe.png', // 🔥 INI DIA KUNCI MASUKIN FOTONYA!
-    textTheme: 'text-white drop-shadow-md', // Teks gue ganti putih + shadow biar kebaca di atas foto
-    btnTheme: 'bg-[#F4F1EA]/80 backdrop-blur-md border-[1.5px] border-[#3C352D] text-[#3C352D] shadow-[4px_4px_0px_rgba(0,0,0,0.5)] rounded-sm hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[0px_0px_0px_rgba(0,0,0,0.5)] transition-all', 
-    font: 'Courier Prime' 
-  }
+  ocean: { id: 'ocean', name: 'Ocean Blue', bgTheme: 'bg-gradient-to-b from-blue-50 to-blue-100', textTheme: 'text-blue-900', btnTheme: 'bg-white text-blue-900 shadow-sm' },
+  matcha: { id: 'matcha', name: 'Matcha Green', bgTheme: 'bg-[#E8F5E9]', textTheme: 'text-[#1B5E20]', btnTheme: 'bg-white text-[#2E7D32] shadow-sm' },
+  glass: { id: 'glass', name: 'Glassmorphism', bgTheme: 'bg-gradient-to-br from-purple-500 to-pink-500', textTheme: 'text-white', btnTheme: 'bg-white/20 border border-white/30 text-white backdrop-blur-md' },
+  cyber: { id: 'cyber', name: 'Cyberpunk', bgTheme: 'bg-black', textTheme: 'text-[#00ff9f] drop-shadow-[0_0_8px_rgba(0,255,159,0.8)]', btnTheme: 'bg-transparent border border-[#00ff9f] text-[#00ff9f]' },
+  synthwave: { id: 'synthwave', name: 'Retro Synthwave', bgTheme: 'bg-gradient-to-br from-indigo-900 via-purple-900 to-fuchsia-900', textTheme: 'text-fuchsia-200', btnTheme: 'bg-fuchsia-600/20 border border-fuchsia-500 text-fuchsia-100 backdrop-blur-sm' },
+  sultan: { id: 'sultan', name: 'Royal Gold', bgTheme: 'bg-[#0a0a0a]', textTheme: 'text-[#d4af37]', btnTheme: 'bg-[#141414] border border-[#d4af37]/50 text-[#d4af37]' },
+  Ijo: { id: 'Ijo', name: 'Matcha Latte', bgTheme: 'bg-[#F4F1DE]', textTheme: 'text-[#3D4035]', btnTheme: 'bg-[#81B29A] text-white shadow-md' },
+  Anjay: { id: 'Anjay', name: 'Holo Glass', bgTheme: 'bg-gradient-to-tr from-pink-300 via-purple-300 to-indigo-400', textTheme: 'text-white', btnTheme: 'bg-white/20 backdrop-blur-md border border-white/40' },
+  brutal: { id: 'brutal', name: 'Neo Brutalism', bgTheme: 'bg-[#DFD9D6]', textTheme: 'text-black font-black uppercase', btnTheme: 'bg-[#FF4500] border-4 border-black text-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]' },
+  luxury: { id: 'luxury', name: 'Luxury Gold', bgTheme: 'bg-[#1a1a1a]', textTheme: 'text-[#D4AF37]', btnTheme: 'bg-gradient-to-r from-[#BF953F] via-[#FCF6BA] to-[#B38728] text-black font-extrabold' },
+  retro_cafe: { id: 'retro_cafe', name: 'Retro Cafe', bgTheme: 'bg-[#4A3B32]', textTheme: 'text-white', btnTheme: 'bg-[#FDF6E3]/80 text-[#4A3B32] backdrop-blur-md border border-white/50' },
+  sunset: { id: 'sunset', name: 'Sunset Vibes', bgTheme: 'bg-gradient-to-br from-orange-400 to-rose-500', textTheme: 'text-white', btnTheme: 'bg-white/20 border border-white/40 text-white backdrop-blur-lg' },
+  midnight: { id: 'midnight', name: 'Midnight Navy', bgTheme: 'bg-[#000428]', textTheme: 'text-[#00d2ff]', btnTheme: 'bg-[#00d2ff]/10 border border-[#00d2ff]/50 text-[#00d2ff]' },
+  lavender: { id: 'lavender', name: 'Soft Lavender', bgTheme: 'bg-[#E6E6FA]', textTheme: 'text-[#4B0082]', btnTheme: 'bg-white text-[#4B0082] shadow-sm border border-[#4B0082]/10' },
+  coffee: { id: 'coffee', name: 'Coffee Cream', bgTheme: 'bg-[#D6BD98]', textTheme: 'text-[#1A4D2E]', btnTheme: 'bg-[#674230] text-[#D6BD98] rounded-full' },
+  sakura: { id: 'sakura', name: 'Sakura Pink', bgTheme: 'bg-[#FFEBEE]', textTheme: 'text-[#C2185B]', btnTheme: 'bg-white text-[#C2185B] shadow-pink-100 shadow-md' },
+  forest: { id: 'forest', name: 'Dark Forest', bgTheme: 'bg-[#064e3b]', textTheme: 'text-[#ecfdf5]', btnTheme: 'bg-[#065f46] border border-[#10b981]/30 text-[#ecfdf5]' },
+  bubblegum: { id: 'bubblegum', name: 'Bubblegum', bgTheme: 'bg-gradient-to-r from-pink-400 to-blue-400', textTheme: 'text-white', btnTheme: 'bg-white/30 text-white border border-white/50 backdrop-blur-sm' },
+  paper: { id: 'paper', name: 'Old Paper', bgTheme: 'bg-[#F1E7D0]', textTheme: 'text-[#5D4037] font-serif', btnTheme: 'bg-transparent border-2 border-[#5D4037] text-[#5D4037]' },
+  neon: { id: 'neon', name: 'Neon Night', bgTheme: 'bg-[#0D0D0D]', textTheme: 'text-[#CCFF00]', btnTheme: 'bg-[#CCFF00] text-black font-black shadow-[0_0_15px_#CCFF00]' },
+  sky: { id: 'sky', name: 'Clear Sky', bgTheme: 'bg-[#87CEEB]', textTheme: 'text-white font-bold', btnTheme: 'bg-white/40 text-blue-900 border border-white' },
+  monochrome: { id: 'monochrome', name: 'B&W Classic', bgTheme: 'bg-white', textTheme: 'text-black font-mono', btnTheme: 'bg-black text-white hover:bg-white hover:text-black border-2 border-black' },
+  space: { id: 'space', name: 'Deep Space', bgTheme: 'bg-[#050505]', textTheme: 'text-gray-400', btnTheme: 'bg-transparent border border-gray-700 text-gray-300 hover:border-white hover:text-white' },
+   apa: { id: 'apa', name: 'Orange Ahay', bgTheme: 'bg-[#3E2F26]', bgImage: '/apa.png', textTheme: 'text-[#F5E6CA]', btnTheme: 'bg-[#E6D3A3] text-[#3E2F26] border-2 border-[#3E2F26] shadow-[4px_4px_0px_#3E2F26]' },
+  uni: { id: 'uni', name: 'uni 90s', bgTheme: 'bg-[#efe6d8]', bgImage: '/uni.gif', textTheme: 'text-pink-500', btnTheme: 'bg-pink-500/80 text-white border border-pink-300' },
+  Cii: { id: 'Cii', name: 'Vintage Editorial', bgTheme: 'bg-[#e9e1d4]', bgImage: '/abu.gif', textTheme: 'text-[#c2410c]', btnTheme: 'bg-[#c2410c]/90 text-white border border-[#c2410c]' },
+  vintage_diary: { id: 'vintage_diary', name: 'Vintage Diary', bgTheme: 'bg-[#F4F1EA]', bgImage: '/retro_cafe.png', textTheme: 'text-white drop-shadow-md', btnTheme: 'bg-[#F4F1EA]/80 border-[1.5px] border-[#3C352D] text-[#3C352D] shadow-[4px_4px_0px_rgba(0,0,0,0.5)]' }
 };
 
 export const ICON_MAP: Record<string, any> = {

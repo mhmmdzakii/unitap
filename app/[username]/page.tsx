@@ -1,5 +1,6 @@
 // app/[username]/page.tsx
 import { supabase } from '@/lib/supabase';
+import AffiliateTracker from '@/components/AffiliateTracker';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import Script from 'next/script';
@@ -256,7 +257,10 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
           </div>
 
         </div>
+        {/* 🔥 PASANG TRACKER HANTU DI SINI 🔥 */}
+        <AffiliateTracker />
       </div>
+      
     );
   } catch (error) {
     return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-400 font-bold">Failed to load profile.</div>;

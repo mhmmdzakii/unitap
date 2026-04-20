@@ -38,20 +38,39 @@ export default function PublicLinkCard({
   
   const baseClasses = `relative z-[50] block w-full transition-all active:scale-[0.96] shadow-sm backdrop-blur-md cursor-pointer select-none touch-manipulation ${isOutline && !designConfig.colorBtn ? 'border-2 border-current bg-transparent' : theme.btnTheme}`;
 
-  // =========================================================
-  // 🔗 FORMATTER URL PINTAR (ANTI-ERROR LOCALHOST)
+ // =========================================================
+  // 🔗 FORMATTER URL PINTAR (ANTI-ERROR LOCALHOST & PENCEGAT WA)
   // =========================================================
   const getSafeUrl = () => {
     let finalUrl = link.url || '#';
     
+    // 🔥 CEK APAKAH ADA KODE AFFILIATE DI HP PENGUNJUNG
+    let refCode = '';
+    if (typeof window !== 'undefined') {
+      refCode = localStorage.getItem('unitap_ref') || '';
+    }
+    
     if (finalUrl.includes('wa.me') || finalUrl.includes('api.whatsapp')) {
+      let phone = '';
       if (finalUrl.includes(',')) {
         let cleanStr = finalUrl.replace(/^https?:\/\//i, '');
         const numbers = cleanStr.split(',');
         const randomIndex = Math.floor(Math.random() * numbers.length);
-        let picked = numbers[randomIndex].trim();
-        picked = picked.replace(/^wa\.me\//i, '').replace(/^api\.whatsapp\.com\/send\?phone=/i, '').replace(/\D/g, ''); 
-        return `https://wa.me/${picked}`; 
+        phone = numbers[randomIndex].trim();
+      } else {
+        phone = finalUrl;
+      }
+      
+      phone = phone.replace(/^https?:\/\//i, '').replace(/^wa\.me\//i, '').replace(/^api\.whatsapp\.com\/send\?phone=/i, '').replace(/\D/g, ''); 
+      
+      // 🔥 LOGIKA PENCEGAT WA
+      if (refCode) {
+        // Kalau link WA-nya udah ada teks bawaan, kita tambahin di belakangnya
+        const existingTextMatch = finalUrl.match(/[?&]text=([^&]+)/);
+        let message = existingTextMatch ? decodeURIComponent(existingTextMatch[1]) + ` (Referensi: ${refCode})` : `Halo, saya tertarik dengan produk di Link Anda. (Referensi: ${refCode})`;
+        return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+      } else {
+        return `https://wa.me/${phone}`; 
       }
     }
 
@@ -64,7 +83,6 @@ export default function PublicLinkCard({
     }
     return finalUrl;
   };
-
   // =========================================================
   // 🔥 FUNGSI KLIK & GEMBOK
   // =========================================================
